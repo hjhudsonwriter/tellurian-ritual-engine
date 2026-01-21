@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tellurian Ritual Engine — Lullaby Re-Binding</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app" class="app" role="application" aria-label="Tellurian Ritual Engine">
+
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand__title">The Lullaby of the Rootbound Heart</div>
+        <div class="brand__subtitle">Tellurian Re-Binding Ritual Engine</div>
+      </div>
+
+      <div class="hud">
+        <div class="hud__block">
+          <div class="hud__label">Ritual Round</div>
+          <div class="hud__value"><span id="roundNow">1</span>/<span id="roundMax">8</span></div>
+          <div class="pips" id="roundPips" aria-hidden="true"></div>
+        </div>
+
+        <div class="hud__block hud__block--wide">
+          <div class="hud__label">Heartwood Event</div>
+          <div class="hud__value hud__value--event" id="eventTitle">Root Stirring</div>
+          <div class="hud__hint" id="eventHint">Start of round: roll/choose an event.</div>
+        </div>
+      </div>
+    </header>
+
+    <main class="stage">
+
+      <!-- Center: Heartwood Core -->
+      <section class="core" aria-label="Heartwood Core">
+        <div class="core__frame">
+          <svg id="heartwoodSvg" class="heartwood" viewBox="0 0 600 600" aria-label="Heartwood visual">
+            <defs>
+              <radialGradient id="hg" cx="50%" cy="50%" r="55%">
+                <stop offset="0%" stop-color="var(--glow)" stop-opacity="0.75"/>
+                <stop offset="55%" stop-color="var(--glow)" stop-opacity="0.18"/>
+                <stop offset="100%" stop-color="var(--bg2)" stop-opacity="0"/>
+              </radialGradient>
+              <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="6" result="blur" />
+                <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0" result="colored"/>
+                <feMerge>
+                  <feMergeNode in="colored"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+
+            <!-- Ambient glow field -->
+            <circle cx="300" cy="300" r="260" fill="url(#hg)" opacity="0.9" />
+
+            <!-- Root halo -->
+            <g class="roots" opacity="0.9">
+              <path d="M300 80 C 250 120, 210 160, 180 220 C 150 280, 160 330, 210 370" />
+              <path d="M300 80 C 350 120, 390 160, 420 220 C 450 280, 440 330, 390 370" />
+              <path d="M120 300 C 160 250, 210 210, 270 190 C 330 170, 390 180, 430 210" />
+              <path d="M480 300 C 440 350, 390 390, 330 410 C 270 430, 210 420, 170 390" />
+              <path d="M220 520 C 240 470, 270 430, 310 420 C 350 410, 390 430, 420 480" />
+            </g>
+
+            <!-- Heartwood trunk -->
+            <g filter="url(#softGlow)">
+              <path class="trunk" d="M300 150 C 235 150, 175 210, 170 295 C 165 390, 230 465, 300 470 C 370 465, 435 390, 430 295 C 425 210, 365 150, 300 150 Z" />
+              <!-- Inner rings -->
+              <circle class="ring" cx="300" cy="300" r="120" />
+              <circle class="ring" cx="300" cy="300" r="80" />
+              <circle class="ring" cx="300" cy="300" r="40" />
+              <circle class="coreDot" cx="300" cy="300" r="18" />
+            </g>
+
+            <!-- Seal overlay (hidden until completion) -->
+            <g id="sealOverlay" class="sealOverlay" opacity="0">
+              <circle cx="300" cy="300" r="220" class="sealCircle" />
+              <circle cx="300" cy="300" r="185" class="sealCircle2" />
+              <path class="sealGlyph" d="M300 120 L 330 210 L 420 240 L 335 290 L 360 380 L 300 330 L 240 380 L 265 290 L 180 240 L 270 210 Z" />
+            </g>
+          </svg>
+
+          <div class="core__readout">
+            <div class="readout__row">
+              <span class="tag">Pulse</span>
+              <span id="pulseLabel" class="value">Steady</span>
+            </div>
+            <div class="readout__row">
+              <span class="tag">State</span>
+              <span id="stateLabel" class="value">Binding in progress</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bottom: stones -->
+      <section class="stones" aria-label="Glyph Stones">
+
+        <article class="stone" data-stone="weight">
+          <header class="stone__head">
+            <div>
+              <div class="stone__name">Stone of Weight</div>
+              <div class="stone__sub">Stabilisation</div>
+            </div>
+            <div class="stone__meta">
+              <div class="mini">Progress</div>
+              <div class="meter" id="prog_weight" aria-label="Weight progress"></div>
+            </div>
+          </header>
+
+          <div class="stone__body">
+            <div class="stone__disk" id="disk_weight" aria-hidden="true">
+              <div class="runes"></div>
+              <div class="cracks" id="crack_weight"></div>
+            </div>
+
+            <div class="stone__tracks">
+              <div class="track">
+                <div class="track__label">Stress</div>
+                <div class="stress" id="stress_weight" aria-label="Weight stress"></div>
+              </div>
+            </div>
+
+            <div class="stone__cta">
+              <button class="btn" data-action="attempt" data-stone="weight">Attempt</button>
+              <button class="btn btn--ghost" data-action="help" data-stone="weight">Assist</button>
+            </div>
+
+            <div class="stone__rule" id="rule_weight">DC 12 (+1 per Stress). Athletics or Acrobatics.</div>
+          </div>
+        </article>
+
+        <article class="stone" data-stone="memory">
+          <header class="stone__head">
+            <div>
+              <div class="stone__name">Stone of Memory</div>
+              <div class="stone__sub">Resonance</div>
+            </div>
+            <div class="stone__meta">
+              <div class="mini">Progress</div>
+              <div class="meter" id="prog_memory" aria-label="Memory progress"></div>
+            </div>
+          </header>
+
+          <div class="stone__body">
+            <div class="stone__disk" id="disk_memory" aria-hidden="true">
+              <div class="runes"></div>
+              <div class="cracks" id="crack_memory"></div>
+            </div>
+
+            <div class="stone__tracks">
+              <div class="track">
+                <div class="track__label">Stress</div>
+                <div class="stress" id="stress_memory" aria-label="Memory stress"></div>
+              </div>
+              <div class="track">
+                <div class="track__label">Target</div>
+                <div class="target" id="memoryTarget">6</div>
+              </div>
+            </div>
+
+            <div class="stone__cta">
+              <button class="btn" data-action="attempt" data-stone="memory">Attempt</button>
+              <button class="btn btn--ghost" data-action="help" data-stone="memory">Assist</button>
+            </div>
+
+            <div class="stone__rule" id="rule_memory">Roll 2d6. Exact match clears 1 Stress.</div>
+          </div>
+        </article>
+
+        <article class="stone" data-stone="silence">
+          <header class="stone__head">
+            <div>
+              <div class="stone__name">Stone of Silence</div>
+              <div class="stone__sub">Containment</div>
+            </div>
+            <div class="stone__meta">
+              <div class="mini">Progress</div>
+              <div class="meter" id="prog_silence" aria-label="Silence progress"></div>
+            </div>
+          </header>
+
+          <div class="stone__body">
+            <div class="stone__disk" id="disk_silence" aria-hidden="true">
+              <div class="runes"></div>
+              <div class="cracks" id="crack_silence"></div>
+            </div>
+
+            <div class="stone__tracks">
+              <div class="track">
+                <div class="track__label">Stress</div>
+                <div class="stress" id="stress_silence" aria-label="Silence stress"></div>
+              </div>
+            </div>
+
+            <div class="stone__cta">
+              <button class="btn" data-action="attempt" data-stone="silence">Attempt</button>
+              <button class="btn btn--ghost" data-action="help" data-stone="silence">Assist</button>
+            </div>
+
+            <div class="stone__rule" id="rule_silence">DC = 10 + Slot + Stress. Arcana or Religion.</div>
+          </div>
+        </article>
+
+      </section>
+
+    </main>
+
+    <!-- Modal for prompting/recording results -->
+    <div id="modal" class="modal" aria-hidden="true" role="dialog" aria-label="Ritual prompt">
+      <div class="modal__panel">
+        <div class="modal__title" id="modalTitle">Attempt</div>
+        <div class="modal__body" id="modalBody"></div>
+
+        <div class="modal__grid">
+          <label class="field">
+            <span class="field__label">Roll Result</span>
+            <input id="rollInput" class="input" type="number" inputmode="numeric" placeholder="Enter result" />
+          </label>
+
+          <label class="field" id="slotField" style="display:none;">
+            <span class="field__label">Spell Slot Level (or 0)</span>
+            <input id="slotInput" class="input" type="number" inputmode="numeric" min="0" max="9" value="0" />
+          </label>
+
+          <label class="field" id="advField" style="display:none;">
+            <span class="field__label">Advantage Used?</span>
+            <select id="advSelect" class="input">
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </label>
+
+          <label class="field" id="memoryAdjustField" style="display:none;">
+            <span class="field__label">Target Adjust (Assist)</span>
+            <select id="memoryAdjust" class="input">
+              <option value="0">0</option>
+              <option value="-1">-1</option>
+              <option value="1">+1</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="modal__buttons">
+          <button class="btn btn--ghost" id="btnCancel">Cancel</button>
+          <button class="btn" id="btnApply">Apply</button>
+        </div>
+
+        <div class="modal__foot" id="modalFoot"></div>
+      </div>
+    </div>
+
+    <!-- DM Control Dock (toggle with `) -->
+    <aside id="dmDock" class="dmDock" aria-label="DM Controls" aria-hidden="true">
+      <div class="dmDock__head">
+        <div class="dmDock__title">DM Dock</div>
+        <div class="dmDock__sub">Toggle: <kbd>`</kbd> • Quick keys: <kbd>N</kbd> next round, <kbd>E</kbd> event, <kbd>R</kbd> reset</div>
+      </div>
+
+      <div class="dmDock__grid">
+        <div class="dmCard">
+          <div class="dmCard__title">Round</div>
+          <div class="dmCard__row">
+            <button class="btn btn--small" id="btnPrevRound">◀</button>
+            <button class="btn btn--small" id="btnNextRound">Next Round</button>
+            <button class="btn btn--small btn--ghost" id="btnAutoEvent">Roll Event</button>
+          </div>
+        </div>
+
+        <div class="dmCard">
+          <div class="dmCard__title">Stress Control</div>
+          <div class="dmCard__row">
+            <select id="stressStone" class="input input--small">
+              <option value="weight">Weight</option>
+              <option value="memory">Memory</option>
+              <option value="silence">Silence</option>
+            </select>
+            <button class="btn btn--small" id="btnStressPlus">+ Stress</button>
+            <button class="btn btn--small btn--ghost" id="btnStressMinus">- Stress</button>
+          </div>
+        </div>
+
+        <div class="dmCard">
+          <div class="dmCard__title">Progress Control</div>
+          <div class="dmCard__row">
+            <select id="progStone" class="input input--small">
+              <option value="weight">Weight</option>
+              <option value="memory">Memory</option>
+              <option value="silence">Silence</option>
+            </select>
+            <button class="btn btn--small" id="btnProgPlus">+ Progress</button>
+            <button class="btn btn--small btn--ghost" id="btnProgMinus">- Progress</button>
+          </div>
+        </div>
+
+        <div class="dmCard">
+          <div class="dmCard__title">Interruption</div>
+          <div class="dmCard__row">
+            <button class="btn btn--small" id="btnInterrupt">Trigger Interruption</button>
+            <button class="btn btn--small btn--ghost" id="btnClearInterrupt">Clear</button>
+          </div>
+        </div>
+
+        <div class="dmCard dmCard--wide">
+          <div class="dmCard__title">Reset / Utilities</div>
+          <div class="dmCard__row">
+            <button class="btn btn--small btn--ghost" id="btnSealTest">Run Final Seal Test</button>
+            <button class="btn btn--small" id="btnReset">Reset Ritual</button>
+          </div>
+          <div class="dmCard__note">Tip: this tool does not roll dice. You input results to keep the ritual feeling tabletop.</div>
+        </div>
+      </div>
+    </aside>
+
+    <footer class="footer">
+      <div class="footer__left">Projector Mode • Fullscreen recommended</div>
+      <div class="footer__right">Press <kbd>`</kbd> for DM Dock</div>
+    </footer>
+
+    <div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
+
+  </div>
+
+  <script src="ritual.js"></script>
+</body>
+</html>
