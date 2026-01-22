@@ -202,72 +202,66 @@
   }
 
   function renderStone(id){
-    const st = state.stones[id];
-    // Progress pips
-    const progEl = $("prog_"+id);
+  const st = state.stones[id];
+
+  // Progress pips
+  const progEl = $("prog_"+id);
+  if (progEl){
     progEl.innerHTML = "";
     for(let i=1;i<=3;i++){
       const p=document.createElement("div");
       p.className="pip"+(i<=st.progress?" on":"");
       progEl.appendChild(p);
     }
+  }
 
-    // Stress pips
-    const stressEl = $("stress_"+id);
+  // Stress pips
+  const stressEl = $("stress_"+id);
+  if (stressEl){
     stressEl.innerHTML = "";
     for(let i=1;i<=4;i++){
       const s=document.createElement("div");
       s.className="stressPip"+(i<=st.stress?" on":"");
       stressEl.appendChild(s);
     }
+  }
 
-    // Crack overlay
-    const crackEl = $("crack_"+id);
-    let crackImg="";
-    if(st.stress===1) crackImg="assets/img/cracks_1.png";
-    if(st.stress===2) crackImg="assets/img/cracks_2.png";
-    if(st.stress>=3) crackImg="assets/img/cracks_3.png";
+  // Crack overlay (single source of truth)
+  const crackEl = $("crack_"+id);
+  if (crackEl){
+    let crackImg = "";
+    if (!st.locked){
+      if (st.stress === 1) crackImg = "assets/img/cracks_1.png";
+      if (st.stress === 2) crackImg = "assets/img/cracks_2.png";
+      if (st.stress >= 3) crackImg = "assets/img/cracks_3.png";
+    }
+
     crackEl.style.backgroundImage = crackImg ? `url("${crackImg}")` : "none";
-    crackEl.style.opacity = st.stress===0 ? "0" : "1";
 
-    // Rule text
-    // Rule text (optional — only if the element exists in the layout)
-const ruleEl = $("rule_"+id);
-if(ruleEl){
-  if(id==="weight"){
-    const dc=12+st.stress;
-    ruleEl.textContent = `DC ${dc} (12 + Stress). Athletics/Acrobatics. Assist = Advantage toggle.`;
+    // Fade intensity by stress
+    if (st.locked || st.stress <= 0) crackEl.style.opacity = "0";
+    else if (st.stress === 1) crackEl.style.opacity = "0.55";
+    else if (st.stress === 2) crackEl.style.opacity = "0.70";
+    else crackEl.style.opacity = "0.85";
   }
-  if(id==="memory"){
-    const t=memoryTargetByRound(state.round);
-    ruleEl.textContent = `Roll 2d6 vs Target ${t}. Exact: +Progress and -Stress. ±1: +Progress. Miss by 2+: +Stress.`;
-  }
-  if(id==="silence"){
-    const dcBase = 10 + st.stress;
-    ruleEl.textContent = `DC = 10 + Slot + Stress. Base ${dcBase} (slot adds more). Arcana/Religion.`;
-  }
-}
-      // --- Crack overlays (show based on Stress) ---
-  const crackEl = $("crack_" + id);
-  if (crackEl) {
-    const s = st.stress || 0;
 
-    if (s <= 0 || st.locked) {
-      crackEl.style.opacity = "0";
-      crackEl.style.backgroundImage = "";
-    } else if (s === 1) {
-      crackEl.style.opacity = "0.55";
-      crackEl.style.backgroundImage = "var(--img-crack-1)";
-    } else if (s === 2) {
-      crackEl.style.opacity = "0.70";
-      crackEl.style.backgroundImage = "var(--img-crack-2)";
-    } else {
-      // Stress 3 shows the worst visible cracking (Stress 4 = failure state)
-      crackEl.style.opacity = "0.85";
-      crackEl.style.backgroundImage = "var(--img-crack-3)";
+  // Optional rule text (only if element exists)
+  const ruleEl = $("rule_"+id);
+  if(ruleEl){
+    if(id==="weight"){
+      const dc=12+st.stress;
+      ruleEl.textContent = `DC ${dc} (12 + Stress). Athletics/Acrobatics. Assist = Advantage toggle.`;
+    }
+    if(id==="memory"){
+      const t=memoryTargetByRound(state.round);
+      ruleEl.textContent = `Roll 2d6 vs Target ${t}. Exact: +Progress and -Stress. ±1: +Progress. Miss by 2+: +Stress.`;
+    }
+    if(id==="silence"){
+      const dcBase = 10 + st.stress;
+      ruleEl.textContent = `DC = 10 + Slot + Stress. Base ${dcBase} (slot adds more). Arcana/Religion.`;
     }
   }
-    } // <-- ADD THIS LINE (closes renderStone)
+}
 
   function renderAll(){
     elRoundNow.textContent = String(state.round);
