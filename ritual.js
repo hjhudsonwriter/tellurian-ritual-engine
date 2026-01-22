@@ -224,6 +224,7 @@ if(ruleEl){
     ruleEl.textContent = `DC = 10 + Slot + Stress. Base ${dcBase} (slot adds more). Arcana/Religion.`;
   }
 }
+    } // <-- ADD THIS LINE (closes renderStone)
 
   function renderAll(){
     elRoundNow.textContent = String(state.round);
