@@ -11,6 +11,18 @@
   --stone2:#3a4943;
   --shadow: rgba(0,0,0,.55);
   --r: 18px;
+    /* ---- Asset paths (must match your GitHub filenames exactly) ---- */
+  --img-heartwood: url("assets/img/heartwood_tree.png");
+  --img-stone-weight: url("assets/img/weight_stone.png");
+  --img-stone-memory: url("assets/img/memory_stone.png");
+  --img-stone-silence: url("assets/img/silence_stone.png");
+
+  --img-crack-1: url("assets/img/cracks_1.png");
+  --img-crack-2: url("assets/img/cracks_2.png");
+  --img-crack-3: url("assets/img/cracks_3.png");
+
+  /* Animation speed controlled by JS */
+  --pulse: 2.6s;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -92,6 +104,30 @@ body{
   overflow:hidden;
 }
 .core__frame{position:absolute; inset:0; display:flex; align-items:center; justify-content:center}
+/* Heartwood artwork overlay */
+.core__frame::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background-image: var(--img-heartwood);
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size: min(70vh, 640px);
+  opacity: 0.95;
+  filter: drop-shadow(0 18px 40px rgba(0,0,0,.65));
+  animation: heartPulse var(--pulse) ease-in-out infinite;
+  pointer-events:none;
+}
+
+/* Subtle pulse */
+@keyframes heartPulse{
+  0%   { transform: scale(0.98); filter: drop-shadow(0 18px 40px rgba(0,0,0,.65)) saturate(1); }
+  55%  { transform: scale(1.02); filter: drop-shadow(0 22px 55px rgba(0,0,0,.75)) saturate(1.15); }
+  100% { transform: scale(0.98); filter: drop-shadow(0 18px 40px rgba(0,0,0,.65)) saturate(1); }
+}
+
+/* Ensure SVG sits above the image */
+.heartwood{ position:relative; z-index:2; }
 
 .heartwood{
   width:min(70vh, 640px);
@@ -178,6 +214,25 @@ body{
   filter: drop-shadow(0 0 10px rgba(110,240,166,.14));
 }
 
+/* Stone artwork backgrounds */
+#disk_weight{
+  background-image: var(--img-stone-weight);
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size: cover;
+}
+#disk_memory{
+  background-image: var(--img-stone-memory);
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size: cover;
+}
+#disk_silence{
+  background-image: var(--img-stone-silence);
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size: cover;
+}
 /* Crack overlays by stress */
 .cracks{position:absolute; inset:0; pointer-events:none}
 .crack{position:absolute; inset:0; opacity:0; transition:opacity .35s ease}
@@ -190,6 +245,18 @@ body{
 /* Locked effect */
 .stoneCard[data-locked="true"] .stoneDisk{box-shadow: 0 0 28px rgba(110,240,166,.20), 0 16px 34px rgba(0,0,0,.55)}
 .stoneCard[data-locked="true"] .stoneDisk::after{opacity:.18}
+
+/* Crack overlays (we swap image by JS via classes) */
+.cracks{
+  position:absolute;
+  inset:0;
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size: cover;
+  opacity: 0;
+  transition: opacity .25s ease;
+  pointer-events:none;
+}
 
 .track{
   display:grid;
