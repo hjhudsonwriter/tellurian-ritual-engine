@@ -172,10 +172,11 @@ body::before{
 /* Center heartwood */
 .arenaCenter{
   position:absolute;
-  left:50%; top:50%;
+  left:50%; 
+  top:50%;
   transform: translate(-50%, -50%);
-  width:min(520px, 48vw);
-  height:min(520px, 48vw);
+  width: min(680px, 60vw);
+  height: min(680px, 60vw);
 }
 
 .core--arena{
@@ -195,7 +196,7 @@ body::before{
   background-image: var(--img-heartwood);
   background-repeat:no-repeat;
   background-position:center;
-  background-size: contain;
+  background-size: 110% auto;
   opacity:.98;
   filter: drop-shadow(0 20px 55px rgba(0,0,0,.82));
   animation: heartPulse var(--pulse) ease-in-out infinite;
@@ -257,16 +258,16 @@ body::before{
   letter-spacing:.04em;
 }
 .stoneOrbitBody{
-  display:grid;
-  grid-template-columns: 124px 1fr;
-  gap:12px;
+  display:flex;
+  flex-direction:column;
   align-items:center;
+  gap:14px;
 }
 .stoneOrbitMeta{display:flex; flex-direction:column; gap:10px; align-items:flex-start}
 
 .stoneDisk--orbit{
-  width:124px;
-  height:124px;
+  width:180px;
+  height:180px;
   border-radius:999px;
   border:1px solid rgba(255,255,255,.14);
   background-color: rgba(0,0,0,.25);
@@ -274,6 +275,7 @@ body::before{
   background-position:center;
   background-size: cover;
   position:relative;
+  z-index:1;
   overflow:hidden;
   box-shadow: 0 18px 44px rgba(0,0,0,.70);
 }
@@ -287,6 +289,7 @@ body::before{
 .cracks{
   position:absolute;
   inset:0;
+  z-index: 3;
   background-repeat:no-repeat;
   background-position:center;
   background-size: cover;
@@ -329,7 +332,7 @@ body::before{
 .btn--primary{border-color: rgba(110,240,166,.55); background: rgba(110,240,166,.16)}
 .btn--ghost{background: rgba(0,0,0,.18)}
 .btn--small{padding:8px 10px; font-size:12px}
-.stoneActions--orbit{display:flex; gap:8px}
+.stoneActions--orbit{display:flex; gap:10px; justify-content:center;}
 
 /* Chips */
 .chip{
