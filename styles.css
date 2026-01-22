@@ -1,19 +1,22 @@
+/* ---------- Ritual Fonts (Google Fonts) ----------
+   If Google Fonts are blocked, it falls back gracefully. */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=IM+Fell+English:ital@0;1&display=swap');
+
 :root{
-  --bg0:#050707;
-  --bg1:#08100d;
+  --bg0:#040606;
+  --bg1:#07110d;
+
   --ink:#e9f2ee;
-  --muted:#a9b8b0;
+  --muted:#a7b7af;
 
   --accent:#6ef0a6;
   --warn:#ffcc66;
   --danger:#ff5d6c;
 
-  --panel: rgba(0,0,0,.35);
-  --panel2: rgba(0,0,0,.55);
   --stroke: rgba(255,255,255,.10);
-  --shadow: rgba(0,0,0,.65);
-
+  --shadow: rgba(0,0,0,.70);
   --r: 18px;
+
   --pulse: 2.6s;
   --glow: rgba(110,240,166,0.95);
 
@@ -29,53 +32,96 @@ html,body{height:100%}
 body{
   margin:0;
   color:var(--ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", sans-serif;
+  font-family: "IM Fell English", ui-serif, Georgia, serif;
   background:
-    radial-gradient(1200px 800px at 50% 35%, rgba(110,240,166,.10), transparent 60%),
-    radial-gradient(900px 600px at 15% 80%, rgba(110,240,166,.06), transparent 55%),
+    radial-gradient(1000px 700px at 50% 45%, rgba(110,240,166,.10), transparent 60%),
+    radial-gradient(1200px 900px at 20% 80%, rgba(110,240,166,.05), transparent 60%),
+    radial-gradient(900px 600px at 80% 15%, rgba(110,240,166,.04), transparent 55%),
     linear-gradient(180deg, var(--bg1), var(--bg0));
   overflow:hidden;
 }
 
+/* Subtle “stone grain” noise using layered gradients (no image needed) */
+body::before{
+  content:"";
+  position:fixed; inset:0;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255,255,255,.03), transparent 35%),
+    radial-gradient(circle at 70% 55%, rgba(255,255,255,.02), transparent 40%),
+    linear-gradient(0deg, rgba(255,255,255,.02), rgba(0,0,0,0));
+  mix-blend-mode: overlay;
+  opacity:.55;
+  pointer-events:none;
+}
+
 .app{height:100%; display:flex; flex-direction:column}
 
-/* Top bar */
+/* Topbar stays functional but looks more “ritual” */
 .topbar{
   display:flex;
   justify-content:space-between;
   align-items:flex-end;
   padding:16px 18px 10px;
   border-bottom:1px solid rgba(255,255,255,.06);
-  background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.10));
+  background: linear-gradient(180deg, rgba(0,0,0,.60), rgba(0,0,0,.12));
 }
-.brand__title{font-weight:1000; letter-spacing:.02em; font-size:22px}
-.brand__subtitle{color:var(--muted); font-size:12.5px; margin-top:2px}
+
+.brand__title{
+  font-family:"Cinzel", ui-serif, serif;
+  font-weight:900;
+  letter-spacing:.04em;
+  font-size:22px;
+}
+.brand__subtitle{
+  color:rgba(233,242,238,.72);
+  font-size:12.5px;
+  margin-top:2px;
+}
 
 .topControls{display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end}
 
-/* HUD strip */
+/* HUD strip can stay, but is slimmer */
 .hudStrip{
   display:flex;
   gap:12px;
-  padding:10px 18px 14px;
+  padding:10px 18px 12px;
   border-bottom:1px solid rgba(255,255,255,.06);
 }
+
 .hudBlock{
   min-width: 220px;
-  border:1px solid var(--stroke);
-  border-radius: 14px;
-  background: rgba(0,0,0,.28);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;
+  background: rgba(0,0,0,.22);
   box-shadow: 0 14px 30px var(--shadow);
   padding:10px 12px;
 }
 .hudBlock--wide{min-width: 420px; flex:1}
-.hudLabel{color:var(--muted); font-size:11px; letter-spacing:.08em; text-transform:uppercase}
-.hudValue{font-size:18px; font-weight:1000; margin-top:3px}
+
+.hudLabel{
+  font-family:"Cinzel", ui-serif, serif;
+  color:rgba(233,242,238,.60);
+  font-size:11px;
+  letter-spacing:.14em;
+  text-transform:uppercase
+}
+.hudValue{
+  font-family:"Cinzel", ui-serif, serif;
+  font-size:18px;
+  font-weight:800;
+  margin-top:3px
+}
 .hudValue--event{color:var(--accent)}
-.hudHint{color:rgba(233,242,238,.80); font-size:12.5px; margin-top:6px}
+.hudHint{
+  color:rgba(233,242,238,.75);
+  font-size:12.5px;
+  margin-top:6px
+}
 .hudMiniRow{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap}
 
+/* Pips */
 .pips{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px}
+.pips--mini{margin-top:0}
 .pip{
   width:12px; height:12px;
   border-radius:999px;
@@ -88,75 +134,83 @@ body{
   box-shadow:0 0 18px rgba(110,240,166,.35);
 }
 
-/* Stage */
-.stage{
-  flex:1;
-  display:grid;
-  grid-template-columns: 1.05fr 1.25fr 1.05fr;
-  gap:14px;
-  padding:14px;
-  min-height:0;
-}
+/* Stage becomes a single “arena” */
+.stage{flex:1; padding:16px; min-height:0}
+.stage--arena{display:flex; align-items:center; justify-content:center}
 
-.panel{
-  border:1px solid var(--stroke);
-  border-radius: var(--r);
-  background: var(--panel);
-  box-shadow: 0 18px 44px var(--shadow);
-  overflow:hidden;
-  min-height:0;
-}
-.panelHead{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:12px 14px;
-  border-bottom:1px solid rgba(255,255,255,.08);
-  background: linear-gradient(180deg, rgba(255,255,255,.06), transparent);
-}
-.panelTitle{font-weight:1000; letter-spacing:.02em}
-.panelSub{color:var(--muted); font-size:12px; margin-top:2px}
-
-/* Core */
-.corePanel{display:flex; flex-direction:column}
-.core{
+/* Arena container */
+.arena{
   position:relative;
-  flex:1;
-  min-height:0;
+  width:min(1280px, 96vw);
+  height:min(680px, calc(100vh - 190px));
+  border-radius: 26px;
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.18);
+  box-shadow: 0 28px 90px rgba(0,0,0,.75);
   overflow:hidden;
 }
-.core__frame{
+
+/* Root haze overlay (CSS-only) */
+.arena::before{
+  content:"";
+  position:absolute; inset:-20%;
+  background:
+    radial-gradient(closest-side at 50% 50%, rgba(110,240,166,.10), transparent 60%),
+    radial-gradient(closest-side at 20% 80%, rgba(110,240,166,.06), transparent 55%),
+    radial-gradient(closest-side at 75% 25%, rgba(110,240,166,.05), transparent 55%);
+  filter: blur(18px);
+  opacity:.75;
+  animation: haze 10s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes haze{
+  0%{ transform: translate(0,0) scale(1); opacity:.55 }
+  50%{ transform: translate(10px,-8px) scale(1.03); opacity:.80 }
+  100%{ transform: translate(0,0) scale(1); opacity:.55 }
+}
+
+/* Center heartwood */
+.arenaCenter{
   position:absolute;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  left:50%; top:50%;
+  transform: translate(-50%, -50%);
+  width:min(520px, 48vw);
+  height:min(520px, 48vw);
+}
+
+.core--arena{
+  position:relative;
+  width:100%;
+  height:100%;
 }
 
 /* Heartwood image */
+.core__frame{
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+}
 .core__frame::before{
   content:"";
-  position:absolute;
-  inset:0;
+  position:absolute; inset:0;
   background-image: var(--img-heartwood);
   background-repeat:no-repeat;
   background-position:center;
-  background-size: min(62vh, 580px);
+  background-size: contain;
   opacity:.98;
-  filter: drop-shadow(0 18px 48px rgba(0,0,0,.75));
+  filter: drop-shadow(0 20px 55px rgba(0,0,0,.82));
   animation: heartPulse var(--pulse) ease-in-out infinite;
   pointer-events:none;
 }
 @keyframes heartPulse{
-  0%{ transform: scale(.985); filter: drop-shadow(0 18px 48px rgba(0,0,0,.75)) saturate(1); }
-  55%{ transform: scale(1.02); filter: drop-shadow(0 22px 60px rgba(0,0,0,.82)) saturate(1.15); }
-  100%{ transform: scale(.985); filter: drop-shadow(0 18px 48px rgba(0,0,0,.75)) saturate(1); }
+  0%{ transform: scale(.985); filter: drop-shadow(0 20px 55px rgba(0,0,0,.82)) saturate(1); }
+  55%{ transform: scale(1.03); filter: drop-shadow(0 26px 70px rgba(0,0,0,.88)) saturate(1.18); }
+  100%{ transform: scale(.985); filter: drop-shadow(0 20px 55px rgba(0,0,0,.82)) saturate(1); }
 }
 
 /* FX rings */
 .heartwoodFX{
-  width:min(62vh, 580px);
-  height:min(62vh, 580px);
+  width:100%;
+  height:100%;
   position:relative;
   z-index:2;
 }
@@ -164,106 +218,72 @@ body{
   fill:none;
   stroke: var(--glow);
   stroke-width: 3;
-  opacity:.28;
+  opacity:.22;
   animation: ringPulse var(--pulse) ease-in-out infinite;
 }
-.fxRing2{opacity:.22; stroke-width:2}
-.fxRing3{opacity:.18; stroke-width:2}
-.fxDot{fill: var(--glow); opacity:.35}
-.fxRoot{
-  fill:none;
-  stroke: rgba(110,240,166,.55);
-  stroke-width: 2;
-  opacity:.18;
-}
+.fxRing2{opacity:.18; stroke-width:2}
+.fxRing3{opacity:.14; stroke-width:2}
+.fxDot{fill: var(--glow); opacity:.30}
+.fxRoot{fill:none; stroke: rgba(110,240,166,.50); stroke-width: 2; opacity:.14}
 @keyframes ringPulse{
-  0%{ opacity:.18; }
-  55%{ opacity:.40; }
-  100%{ opacity:.18; }
+  0%{ opacity:.14; }
+  55%{ opacity:.42; }
+  100%{ opacity:.14; }
 }
 
-/* Readout */
-.coreReadout{
+/* Orbit stones */
+.stone--orbit{
   position:absolute;
-  left:14px;
-  right:14px;
-  bottom:14px;
-  z-index:3;
-  padding:10px 12px;
-  border-radius:14px;
+  width: 320px;
   border:1px solid rgba(255,255,255,.10);
-  background: rgba(0,0,0,.55);
-  backdrop-filter: blur(10px);
+  border-radius: 18px;
+  background: rgba(0,0,0,.28);
+  box-shadow: 0 18px 55px rgba(0,0,0,.70);
+  overflow:hidden;
+  padding:12px;
+  backdrop-filter: blur(8px);
 }
-.readRow{font-size:12.5px; color:rgba(233,242,238,.86); line-height:1.35}
-.tag{
-  display:inline-block;
-  padding:2px 8px;
+.stone--left{ left: 24px; top: 50%; transform: translateY(-50%); }
+.stone--right{ right: 24px; top: 50%; transform: translateY(-50%); }
+.stone--bottom{ left: 50%; bottom: 18px; transform: translateX(-50%); width: 420px; }
+
+.stoneOrbitTop{
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:10px;
+}
+.stoneName{
+  font-family:"Cinzel", ui-serif, serif;
+  font-weight:900;
+  letter-spacing:.04em;
+}
+.stoneOrbitBody{
+  display:grid;
+  grid-template-columns: 124px 1fr;
+  gap:12px;
+  align-items:center;
+}
+.stoneOrbitMeta{display:flex; flex-direction:column; gap:10px; align-items:flex-start}
+
+.stoneDisk--orbit{
+  width:124px;
+  height:124px;
   border-radius:999px;
   border:1px solid rgba(255,255,255,.14);
-  color: rgba(233,242,238,.86);
-  margin-right:8px;
-  font-size:11px;
-}
-kbd{
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size:11px;
-  padding:2px 6px;
-  border-radius:8px;
-  border:1px solid rgba(255,255,255,.18);
-  background: rgba(0,0,0,.35);
-}
-
-/* Stones */
-.stonesPanel{display:flex; flex-direction:column; min-height:0}
-.stones{padding:14px; overflow:auto; min-height:0}
-.stones::-webkit-scrollbar{width:10px}
-.stones::-webkit-scrollbar-thumb{background: rgba(255,255,255,.10); border-radius:999px}
-
-.stone{
-  border:1px solid rgba(255,255,255,.10);
-  border-radius: 16px;
-  background: rgba(0,0,0,.22);
-  box-shadow: 0 16px 34px rgba(0,0,0,.55);
-  overflow:hidden;
-  margin-bottom:14px;
-}
-.stoneHead{
-  display:flex;
-  justify-content:space-between;
-  gap:12px;
-  padding:12px 12px 10px;
-  border-bottom:1px solid rgba(255,255,255,.08);
-  background: linear-gradient(180deg, rgba(255,255,255,.06), transparent);
-}
-.stoneName{font-weight:1000}
-.stoneSub{color:var(--muted); font-size:12px; margin-top:2px}
-.stoneMeters{min-width:140px; text-align:right}
-.miniLabel{color:rgba(233,242,238,.72); font-size:11px; letter-spacing:.08em; text-transform:uppercase}
-
-.stoneBody{
-  display:grid;
-  grid-template-columns: 132px 1fr;
-  gap:12px;
-  padding:12px;
-}
-.stoneDisk{
-  width:120px;
-  height:120px;
-  border-radius:999px;
-  border:1px solid rgba(255,255,255,.12);
   background-color: rgba(0,0,0,.25);
   background-repeat:no-repeat;
   background-position:center;
   background-size: cover;
   position:relative;
   overflow:hidden;
-  box-shadow: 0 18px 44px rgba(0,0,0,.65);
+  box-shadow: 0 18px 44px rgba(0,0,0,.70);
 }
+
+/* Stone images */
 #disk_weight{background-image: var(--img-stone-weight)}
 #disk_memory{background-image: var(--img-stone-memory)}
 #disk_silence{background-image: var(--img-stone-silence)}
 
+/* Cracks overlay */
 .cracks{
   position:absolute;
   inset:0;
@@ -271,13 +291,12 @@ kbd{
   background-position:center;
   background-size: cover;
   opacity:0;
-  transition: opacity .25s ease;
+  transition: opacity .20s ease;
   pointer-events:none;
   mix-blend-mode: screen;
 }
 
-.stoneInfo{display:flex; flex-direction:column; gap:10px}
-.line{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+/* Stress dots */
 .stressRow{display:flex; gap:6px}
 .stressPip{
   width:12px; height:12px; border-radius:999px;
@@ -289,52 +308,6 @@ kbd{
   border-color: rgba(255,93,108,.95);
   box-shadow: 0 0 14px rgba(255,93,108,.25);
 }
-.chip{
-  padding:3px 10px;
-  border-radius:999px;
-  border:1px solid rgba(255,255,255,.14);
-  background: rgba(0,0,0,.25);
-  font-size:12px;
-  color: rgba(233,242,238,.90);
-}
-
-.rule{
-  color:rgba(233,242,238,.88);
-  font-size:13px;
-  line-height:1.35;
-}
-
-.stoneActions{display:flex; gap:10px; flex-wrap:wrap}
-
-/* Log */
-.logPanel{display:flex; flex-direction:column; min-height:0}
-.log{
-  padding:14px;
-  overflow:auto;
-  min-height:0;
-  flex:1;
-}
-.log::-webkit-scrollbar{width:10px}
-.log::-webkit-scrollbar-thumb{background: rgba(255,255,255,.10); border-radius:999px}
-.entry{
-  border:1px solid rgba(255,255,255,.10);
-  border-radius:14px;
-  background: rgba(0,0,0,.25);
-  padding:10px 12px;
-  margin-bottom:10px;
-}
-.entryMeta{display:flex; justify-content:space-between; gap:10px; color:rgba(233,242,238,.72); font-size:12px}
-.entryTitle{font-weight:1000; margin-top:4px}
-.entryText{color:rgba(233,242,238,.86); font-size:13px; margin-top:6px; line-height:1.35}
-
-.miniHelp{
-  border-top:1px solid rgba(255,255,255,.08);
-  padding:12px 14px;
-  background: rgba(0,0,0,.18);
-}
-.miniHelpTitle{font-weight:1000; margin-bottom:6px}
-.miniHelp ol{margin:0; padding-left:18px; color:rgba(233,242,238,.86); font-size:13px}
-.miniHelp li{margin:6px 0}
 
 /* Buttons */
 .btn{
@@ -348,14 +321,31 @@ kbd{
   cursor:pointer;
   box-shadow: 0 10px 24px rgba(0,0,0,.45);
   transition: transform .06s ease, border-color .2s ease, background .2s ease;
+  font-family:"Cinzel", ui-serif, serif;
+  letter-spacing:.02em;
 }
-.btn:hover{border-color: rgba(110,240,166,.45); background: rgba(110,240,166,.08)}
+.btn:hover{border-color: rgba(110,240,166,.45); background: rgba(110,240,166,.10)}
 .btn:active{transform: translateY(1px)}
-.btn--primary{border-color: rgba(110,240,166,.55); background: rgba(110,240,166,.14)}
+.btn--primary{border-color: rgba(110,240,166,.55); background: rgba(110,240,166,.16)}
 .btn--ghost{background: rgba(0,0,0,.18)}
 .btn--small{padding:8px 10px; font-size:12px}
+.stoneActions--orbit{display:flex; gap:8px}
 
-/* Modal */
+/* Chips */
+.chip{
+  padding:3px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.25);
+  font-size:12px;
+  color: rgba(233,242,238,.90);
+}
+.chip--mini{font-size:12px; padding:3px 10px}
+
+/* Modal and DM dock remain from your functional version
+   Keep them as-is in your current CSS OR paste them in below if needed. */
+
+/* MODAL (same as before) */
 .modal{
   position:fixed;
   inset:0;
@@ -371,20 +361,15 @@ kbd{
   width:min(760px, 92vw);
   border-radius:18px;
   border:1px solid rgba(255,255,255,.14);
-  background: rgba(0,0,0,.78);
+  background: rgba(0,0,0,.80);
   box-shadow: 0 30px 90px rgba(0,0,0,.78);
   padding:16px;
 }
-.modalTitle{font-weight:1000; font-size:18px}
+.modalTitle{font-family:"Cinzel", ui-serif, serif; font-weight:1000; font-size:18px}
 .modalBody{margin-top:10px; color:rgba(233,242,238,.90); line-height:1.35}
-.modalGrid{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap:12px;
-  margin-top:12px;
-}
+.modalGrid{display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:12px}
 .field{display:flex; flex-direction:column; gap:6px}
-.fieldLabel{color:rgba(233,242,238,.72); font-size:11px; letter-spacing:.08em; text-transform:uppercase}
+.fieldLabel{color:rgba(233,242,238,.72); font-size:11px; letter-spacing:.12em; text-transform:uppercase; font-family:"Cinzel", ui-serif, serif}
 .input{
   width:100%;
   padding:10px 12px;
@@ -393,15 +378,13 @@ kbd{
   background: rgba(0,0,0,.35);
   color:var(--ink);
   outline:none;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
-.input:focus{
-  border-color: rgba(110,240,166,.45);
-  box-shadow: 0 0 0 3px rgba(110,240,166,.12);
-}
+.input:focus{border-color: rgba(110,240,166,.45); box-shadow: 0 0 0 3px rgba(110,240,166,.12)}
 .modalActions{display:flex; justify-content:flex-end; gap:10px; margin-top:14px}
 .modalFoot{color:rgba(233,242,238,.70); font-size:12.5px; margin-top:10px}
 
-/* DM Dock */
+/* DM Dock (same as before) */
 .dmDock{
   position:fixed;
   left:14px;
@@ -418,28 +401,13 @@ kbd{
   padding:12px;
 }
 .dmDock.open{transform: translateY(0)}
-.dmDockHead{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:12px;
-  margin-bottom:10px;
-}
-.dmDockTitle{font-weight:1000}
+.dmDockHead{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:10px}
+.dmDockTitle{font-family:"Cinzel", ui-serif, serif; font-weight:1000}
 .dmDockSub{color:rgba(233,242,238,.75); font-size:12px; margin-top:2px}
-.dmGrid{
-  display:grid;
-  grid-template-columns: 1fr 1fr 1fr 1.2fr;
-  gap:12px;
-}
-.dmCard{
-  border:1px solid rgba(255,255,255,.10);
-  border-radius:14px;
-  background: rgba(0,0,0,.22);
-  padding:10px;
-}
+.dmGrid{display:grid; grid-template-columns: 1fr 1fr 1fr 1.2fr; gap:12px}
+.dmCard{border:1px solid rgba(255,255,255,.10); border-radius:14px; background: rgba(0,0,0,.22); padding:10px}
 .dmCard--wide{grid-column: span 2}
-.dmCardTitle{font-weight:1000; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:rgba(233,242,238,.78); margin-bottom:8px}
+.dmCardTitle{font-family:"Cinzel", ui-serif, serif; font-weight:1000; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:rgba(233,242,238,.78); margin-bottom:8px}
 .dmRow{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
 .input--small{padding:8px 10px; font-size:12px}
 .dmNote{color:rgba(233,242,238,.72); font-size:12px; margin-top:8px}
@@ -464,13 +432,54 @@ kbd{
 }
 .toast.show{opacity:1; transform: translateX(-50%) translateY(-4px)}
 
+/* Cinematic banner */
+.banner{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background: radial-gradient(900px 600px at 50% 45%, rgba(110,240,166,.18), rgba(0,0,0,.92));
+  z-index: 110;
+  padding: 18px;
+}
+.banner.show{display:flex}
+.bannerInner{
+  width: min(980px, 92vw);
+  border-radius: 26px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.70);
+  box-shadow: 0 40px 120px rgba(0,0,0,.85);
+  padding: 22px 22px 20px;
+  text-align:center;
+}
+.bannerKicker{
+  font-family:"Cinzel", ui-serif, serif;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:rgba(233,242,238,.70);
+  font-size:12px;
+}
+.bannerTitle{
+  font-family:"Cinzel", ui-serif, serif;
+  font-weight:900;
+  font-size:42px;
+  margin-top:8px;
+  color: var(--accent);
+  text-shadow: 0 0 28px rgba(110,240,166,.20);
+}
+.bannerText{
+  margin-top:10px;
+  font-size:18px;
+  color: rgba(233,242,238,.88);
+}
+
 /* Responsive */
 @media (max-width: 1100px){
   body{overflow:auto}
-  .stage{grid-template-columns:1fr; overflow:auto}
   .hudStrip{flex-direction:column}
   .hudBlock, .hudBlock--wide{min-width:0}
-  .dmGrid{grid-template-columns:1fr; }
-  .dmCard--wide{grid-column:auto}
-  .stones{max-height:none}
+  .arena{height: 740px}
+  .stone--left,.stone--right{position:relative; left:auto; right:auto; top:auto; transform:none; margin:12px auto; width:min(520px, 92vw)}
+  .stone--bottom{position:relative; left:auto; transform:none; width:min(520px, 92vw); margin:12px auto}
 }
