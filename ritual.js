@@ -208,20 +208,22 @@
     crackEl.style.opacity = st.stress===0 ? "0" : "1";
 
     // Rule text
-    const ruleEl = $("rule_"+id);
-    if(id==="weight"){
-      const dc=12+st.stress;
-      ruleEl.textContent = `DC ${dc} (12 + Stress). Athletics/Acrobatics. Assist = Advantage toggle.`;
-    }
-    if(id==="memory"){
-      const t=memoryTargetByRound(state.round);
-      ruleEl.textContent = `Roll 2d6 vs Target ${t}. Exact: +Progress and -Stress. ±1: +Progress. Miss by 2+: +Stress.`;
-    }
-    if(id==="silence"){
-      const dcBase = 10 + st.stress;
-      ruleEl.textContent = `DC = 10 + Slot + Stress. Currently base is ${dcBase} (slot adds more). Arcana/Religion.`;
-    }
+    // Rule text (optional — only if the element exists in the layout)
+const ruleEl = $("rule_"+id);
+if(ruleEl){
+  if(id==="weight"){
+    const dc=12+st.stress;
+    ruleEl.textContent = `DC ${dc} (12 + Stress). Athletics/Acrobatics. Assist = Advantage toggle.`;
   }
+  if(id==="memory"){
+    const t=memoryTargetByRound(state.round);
+    ruleEl.textContent = `Roll 2d6 vs Target ${t}. Exact: +Progress and -Stress. ±1: +Progress. Miss by 2+: +Stress.`;
+  }
+  if(id==="silence"){
+    const dcBase = 10 + st.stress;
+    ruleEl.textContent = `DC = 10 + Slot + Stress. Base ${dcBase} (slot adds more). Arcana/Religion.`;
+  }
+}
 
   function renderAll(){
     elRoundNow.textContent = String(state.round);
@@ -271,7 +273,7 @@
     if(state.phase!=="failed"){
       if(s.weight.stress>=4 || s.memory.stress>=4 || s.silence.stress>=4){
         state.phase="failed";
-                showBanner("RITUAL COLLAPSE", "A Glyph Fractures", "Stress reached 4. The binding fails.", 2200);
+                showBanner("RITUAL COLLAPSE", "A Glyph Fractures", "Stress reached 4. The binding fails.", 4200);
         playSfx("interrupt");
         log("Glyph Fracture", "A stone screams as it cracks. The binding collapses.");
         toastMsg("FAILED: A stone fractured (Stress 4).");
@@ -281,7 +283,7 @@
     // seal check (all locked)
     if(state.phase==="running" && allLocked()){
       state.phase="sealed";
-            showBanner("FINAL SEAL", "The Heartwood Sleeps", "All stones locked. The earth closes.", 2400);
+            showBanner("FINAL SEAL", "The Heartwood Sleeps", "All stones locked. The earth closes.", 4200);
       playSfx("seal");
       log("Seal Set", "The roots recoil. The earth closes like an eyelid. The Heartwood sleeps.");
       toastMsg("SEALED: All stones locked.");
@@ -314,7 +316,7 @@
     toast.__t=setTimeout(()=>toast.classList.remove("show"), 2200);
   }
 
-    function showBanner(kicker, title, text, ms=1700){
+    function showBanner(kicker, title, text, ms=2600){
     if(!banner) return;
     bannerKicker.textContent = kicker || "";
     bannerTitle.textContent = title || "";
@@ -336,7 +338,7 @@
       if(!st.locked){
         st.locked=true;
         playSfx("lock");
-                showBanner("STONE LOCKED", cap(id), "The glyph falls quiet.", 1400);
+                showBanner("STONE LOCKED", cap(id), "The glyph falls quiet.", 3000);
         log("Stone Locked", `${cap(id)} locks into place. The runes go still.`);
       }
     } else {
@@ -349,7 +351,7 @@
     if(opts.event && st.locked) return;
     st.stress = clamp(st.stress+n, 0, 4);
     playSfx("stress");
-        showBanner("STONE STRAIN", `${cap(id)}`, "+1 Stress", 900);
+        showBanner("STONE STRAIN", `${cap(id)}`, "+1 Stress", 2400);
     renderAll();
   }
 
@@ -363,7 +365,7 @@
     const st=state.stones[id];
     st.progress = clamp(st.progress+n, 0, 3);
     playSfx("progress");
-        showBanner("BINDING HOLDS", `${cap(id)}`, "+1 Progress", 900);
+        showBanner("BINDING HOLDS", `${cap(id)}`, "+1 Progress", 2400);
     setLockedIfComplete(id);
     renderAll();
   }
@@ -380,7 +382,7 @@
     state.eventIndex = Math.floor(Math.random()*events.length);
     renderEvent();
     const ev = events[state.eventIndex];
-    showBanner("HEARTWOOD EVENT", ev.title, "Ready to apply.", 900);
+    showBanner("HEARTWOOD EVENT", ev.title, "Ready to apply.", 3200);
     toastMsg("Event rolled.");
   }
 
@@ -393,7 +395,7 @@
     if(state.phase!=="running") return;
     const ev = events[state.eventIndex];
     ev.apply();
-    showBanner("HEARTWOOD EVENT", ev.title, ev.hint, 1600);
+    showBanner("HEARTWOOD EVENT", ev.title, ev.hint, 3200);
     toastMsg(ev.title);
     renderAll();
   }
@@ -577,7 +579,9 @@
     btnNextEvent.addEventListener("click", ()=>cycleEvent(1));
     btnNextRound.addEventListener("click", nextRound);
 
-    btnClearLog.addEventListener("click", ()=>{ logEl.innerHTML=""; toastMsg("Log cleared."); });
+    if (btnClearLog && logEl){
+  btnClearLog.addEventListener("click", ()=>{ logEl.innerHTML=""; toastMsg("Log cleared."); });
+}
 
     // Stone buttons
     document.querySelectorAll("[data-action][data-stone]").forEach(btn=>{
