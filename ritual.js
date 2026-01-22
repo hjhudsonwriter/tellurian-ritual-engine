@@ -146,17 +146,40 @@
 
   // ---------- Events ----------
   const events = [
-    { title:"Root Surge",      hint:"Weight +1 Stress (unless locked).", apply:()=>addStress("weight",1,{event:true}) },
-    { title:"Memory Pulse",    hint:"Memory +1 Stress (unless locked).", apply:()=>addStress("memory",1,{event:true}) },
-    { title:"Arcane Feedback", hint:"Silence +1 Stress (unless locked).", apply:()=>addStress("silence",1,{event:true}) },
-    { title:"False Calm",      hint:"No change. The Heartwood listens.", apply:()=>log("False Calm", "A hush spreads through the chamber. For a heartbeat, the roots stop fighting.") },
-    { title:"Echoing Fear",    hint:"All unlocked stones +1 Stress.",    apply:()=>["weight","memory","silence"].forEach(id=>addStress(id,1,{event:true})) },
-    { title:"Moment of Stillness", hint:"Remove 1 Stress from most strained stone.", apply:()=>{
-      const ids = ["weight","memory","silence"].sort((a,b)=>state.stones[b].stress - state.stones[a].stress);
+  {
+    title: "Root Surge",
+    hint: "The Heartwood heaves. Ancient roots tear against the chamber walls, straining all that bears the Weight of the binding.",
+    apply:()=>addStress("weight",1,{event:true})
+  },
+  {
+    title: "Echo of What Was",
+    hint: "Old memories bleed into the stone. The past presses close, heavy with voices that refuse to be forgotten.",
+    apply:()=>addStress("memory",1,{event:true})
+  },
+  {
+    title: "Arcane Backwash",
+    hint: "Dormant magic recoils violently. The air sharpens, and silence fractures under the strain.",
+    apply:()=>addStress("silence",1,{event:true})
+  },
+  {
+    title: "False Calm",
+    hint: "The roots still. For a heartbeat, the chamber listens… and waits.",
+    apply:()=>{/* no effect */}
+  },
+  {
+    title: "Veinwood Thrum",
+    hint: "The Heartwood pulses like a living heart. All unbound stones tremble in answer.",
+    apply:()=>["weight","memory","silence"].forEach(id=>addStress(id,1,{event:true}))
+  },
+  {
+    title: "Moment of Reprieve",
+    hint: "A breath passes through the roots. One stone is granted a fleeting mercy.",
+    apply:()=>{
+      const ids=["weight","memory","silence"].sort((a,b)=>state.stones[b].stress-state.stones[a].stress);
       removeStress(ids[0],1);
-      log("Moment of Stillness", "The strain eases, like breath leaving lungs.");
-    }},
-  ];
+    }
+  }
+];
 
   // ---------- UI Render ----------
   function renderRoundPips(){
