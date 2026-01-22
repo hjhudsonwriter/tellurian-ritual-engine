@@ -163,12 +163,18 @@
       }
     }
 
-    // Cracks visual
-    const crackEl = $("crack_" + id);
-    if (crackEl) {
-      crackEl.style.opacity = String(clamp(st.stress / 4, 0, 1));
-      crackEl.style.filter = st.stress >= 3 ? "drop-shadow(0 0 18px rgba(255,93,108,.35))" : "none";
-    }
+    // Cracks visual (swap overlay by stress)
+const crackEl = $("crack_" + id);
+if (crackEl) {
+  let crackImg = "";
+  if (st.stress === 1) crackImg = "assets/img/cracks_1.png";
+  if (st.stress === 2) crackImg = "assets/img/cracks_2.png";
+  if (st.stress >= 3) crackImg = "assets/img/cracks_3.png";
+
+  crackEl.style.backgroundImage = crackImg ? `url("${crackImg}")` : "none";
+  crackEl.style.opacity = st.stress === 0 ? "0" : "1";
+  crackEl.style.filter = st.stress >= 3 ? "drop-shadow(0 0 18px rgba(110,240,166,.25))" : "none";
+}
 
     // Disk glow
     const diskEl = $("disk_" + id);
