@@ -51,184 +51,116 @@
     </section>
 
     <!-- MAIN STAGE -->
-    <main class="stage">
+    <main class="stage stage--arena">
 
-      <!-- LEFT: HEARTWOOD -->
-      <section class="panel corePanel" aria-label="Heartwood Core">
-        <div class="panelHead">
-          <div>
-            <div class="panelTitle">Heartwood</div>
-            <div class="panelSub">Visual pulse responds to Stress and locks</div>
+  <!-- RITUAL ARENA -->
+  <section class="arena" aria-label="Ritual Arena">
+
+    <!-- Center Heartwood -->
+    <div class="arenaCenter">
+      <div class="core core--arena">
+        <div class="core__frame">
+          <!-- Heartwood image is still via CSS ::before -->
+          <svg class="heartwoodFX" viewBox="0 0 600 600" aria-hidden="true">
+            <defs>
+              <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%">
+                <feGaussianBlur stdDeviation="7" result="b"/>
+                <feMerge>
+                  <feMergeNode in="b"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+
+            <g filter="url(#softGlow)" opacity="0.95">
+              <circle class="fxRing" cx="300" cy="300" r="230"/>
+              <circle class="fxRing fxRing2" cx="300" cy="300" r="185"/>
+              <circle class="fxRing fxRing3" cx="300" cy="300" r="135"/>
+              <circle class="fxDot" cx="300" cy="300" r="14"/>
+
+              <path class="fxRoot" d="M300 85 C 245 125, 215 165, 188 225 C 160 300, 178 352, 230 390"/>
+              <path class="fxRoot" d="M300 85 C 355 125, 385 165, 412 225 C 440 300, 422 352, 370 390"/>
+              <path class="fxRoot" d="M115 325 C 170 265, 218 230, 285 210 C 350 190, 408 208, 470 255"/>
+              <path class="fxRoot" d="M485 305 C 430 360, 388 402, 328 420 C 268 438, 208 425, 165 392"/>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stone LEFT (Weight) -->
+    <article class="stone stone--orbit stone--left" data-stone="weight">
+      <div class="stoneOrbitTop">
+        <div class="stoneName">Weight</div>
+        <div class="pips pips--mini" id="prog_weight"></div>
+      </div>
+      <div class="stoneOrbitBody">
+        <div class="stoneDisk stoneDisk--orbit" id="disk_weight" aria-hidden="true">
+          <div class="cracks" id="crack_weight"></div>
+        </div>
+        <div class="stoneOrbitMeta">
+          <div class="stressRow" id="stress_weight"></div>
+          <div class="stoneActions stoneActions--orbit">
+            <button class="btn btn--small" data-action="attempt" data-stone="weight">Attempt</button>
+            <button class="btn btn--small btn--ghost" data-action="assist" data-stone="weight">Assist</button>
           </div>
         </div>
+      </div>
+    </article>
 
-        <div class="core">
-          <div class="core__frame">
-            <!-- Heartwood image is rendered via CSS ::before -->
-            <svg class="heartwoodFX" viewBox="0 0 600 600" aria-hidden="true">
-              <defs>
-                <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%">
-                  <feGaussianBlur stdDeviation="7" result="b"/>
-                  <feMerge>
-                    <feMergeNode in="b"/>
-                    <feMergeNode in="SourceGraphic"/>
-                  </feMerge>
-                </filter>
-              </defs>
-
-              <!-- Glow rings + root strokes only (NO filled trunk) -->
-              <g filter="url(#softGlow)" opacity="0.95">
-                <circle class="fxRing" cx="300" cy="300" r="220"/>
-                <circle class="fxRing fxRing2" cx="300" cy="300" r="170"/>
-                <circle class="fxRing fxRing3" cx="300" cy="300" r="120"/>
-                <circle class="fxDot" cx="300" cy="300" r="14"/>
-
-                <path class="fxRoot" d="M300 95 C 245 135, 215 170, 190 225 C 160 295, 175 345, 220 380"/>
-                <path class="fxRoot" d="M300 95 C 355 135, 385 170, 410 225 C 440 295, 425 345, 380 380"/>
-                <path class="fxRoot" d="M120 315 C 170 260, 215 225, 280 205 C 340 187, 395 202, 450 240"/>
-                <path class="fxRoot" d="M480 300 C 430 350, 388 392, 330 412 C 270 432, 210 420, 170 388"/>
-              </g>
-            </svg>
-
-            <div class="coreReadout">
-              <div class="readRow"><span class="tag">Tip</span> <span class="val">Use “Next Round” + stone Attempts. Keep it tabletop: you enter rolls.</span></div>
-              <div class="readRow"><span class="tag">Shortcuts</span> <span class="val"><kbd>`</kbd> DM Dock • <kbd>N</kbd> Next • <kbd>E</kbd> Roll Event</span></div>
-            </div>
+    <!-- Stone RIGHT (Memory) -->
+    <article class="stone stone--orbit stone--right" data-stone="memory">
+      <div class="stoneOrbitTop">
+        <div class="stoneName">Memory</div>
+        <div class="pips pips--mini" id="prog_memory"></div>
+      </div>
+      <div class="stoneOrbitBody">
+        <div class="stoneDisk stoneDisk--orbit" id="disk_memory" aria-hidden="true">
+          <div class="cracks" id="crack_memory"></div>
+        </div>
+        <div class="stoneOrbitMeta">
+          <div class="stressRow" id="stress_memory"></div>
+          <div class="chip chip--mini">Target <span id="memoryTarget">6</span></div>
+          <div class="stoneActions stoneActions--orbit">
+            <button class="btn btn--small" data-action="attempt" data-stone="memory">Attempt</button>
+            <button class="btn btn--small btn--ghost" data-action="assist" data-stone="memory">Assist</button>
           </div>
         </div>
-      </section>
+      </div>
+    </article>
 
-      <!-- CENTER: STONES -->
-      <section class="panel stonesPanel" aria-label="Glyph Stones">
-        <div class="panelHead">
-          <div>
-            <div class="panelTitle">Glyph Stones</div>
-            <div class="panelSub">Attempt = enter roll • Assist = small adjustment / advantage</div>
+    <!-- Stone BOTTOM (Silence) -->
+    <article class="stone stone--orbit stone--bottom" data-stone="silence">
+      <div class="stoneOrbitTop">
+        <div class="stoneName">Silence</div>
+        <div class="pips pips--mini" id="prog_silence"></div>
+      </div>
+      <div class="stoneOrbitBody">
+        <div class="stoneDisk stoneDisk--orbit" id="disk_silence" aria-hidden="true">
+          <div class="cracks" id="crack_silence"></div>
+        </div>
+        <div class="stoneOrbitMeta">
+          <div class="stressRow" id="stress_silence"></div>
+          <div class="stoneActions stoneActions--orbit">
+            <button class="btn btn--small" data-action="attempt" data-stone="silence">Attempt</button>
+            <button class="btn btn--small btn--ghost" data-action="assist" data-stone="silence">Assist</button>
           </div>
         </div>
+      </div>
+    </article>
 
-        <div class="stones">
+  </section>
+</main>
 
-          <!-- WEIGHT -->
-          <article class="stone" data-stone="weight">
-            <header class="stoneHead">
-              <div>
-                <div class="stoneName">Stone of Weight</div>
-                <div class="stoneSub">Stabilisation</div>
-              </div>
-              <div class="stoneMeters">
-                <div class="miniLabel">Progress</div>
-                <div class="pips" id="prog_weight"></div>
-              </div>
-            </header>
+<!-- Cinematic Ritual Banner (replaces the log panel) -->
+<div id="banner" class="banner" aria-live="polite" aria-hidden="true">
+  <div class="bannerInner">
+    <div id="bannerKicker" class="bannerKicker">HEARTWOOD EVENT</div>
+    <div id="bannerTitle" class="bannerTitle">Root Surge</div>
+    <div id="bannerText" class="bannerText">Weight Stone +1 Stress (unless locked).</div>
+  </div>
+</div>
 
-            <div class="stoneBody">
-              <div class="stoneDisk" id="disk_weight" aria-hidden="true">
-                <div class="cracks" id="crack_weight"></div>
-              </div>
-
-              <div class="stoneInfo">
-                <div class="line"><span class="miniLabel">Stress</span><span class="stressRow" id="stress_weight"></span></div>
-                <div class="rule" id="rule_weight"></div>
-
-                <div class="stoneActions">
-                  <button class="btn" data-action="attempt" data-stone="weight">Attempt</button>
-                  <button class="btn btn--ghost" data-action="assist" data-stone="weight">Assist</button>
-                </div>
-              </div>
-            </div>
-          </article>
-
-          <!-- MEMORY -->
-          <article class="stone" data-stone="memory">
-            <header class="stoneHead">
-              <div>
-                <div class="stoneName">Stone of Memory</div>
-                <div class="stoneSub">Resonance</div>
-              </div>
-              <div class="stoneMeters">
-                <div class="miniLabel">Progress</div>
-                <div class="pips" id="prog_memory"></div>
-              </div>
-            </header>
-
-            <div class="stoneBody">
-              <div class="stoneDisk" id="disk_memory" aria-hidden="true">
-                <div class="cracks" id="crack_memory"></div>
-              </div>
-
-              <div class="stoneInfo">
-                <div class="line">
-                  <span class="miniLabel">Stress</span><span class="stressRow" id="stress_memory"></span>
-                  <span class="chip">Target: <span id="memoryTarget">6</span></span>
-                </div>
-                <div class="rule" id="rule_memory"></div>
-
-                <div class="stoneActions">
-                  <button class="btn" data-action="attempt" data-stone="memory">Attempt</button>
-                  <button class="btn btn--ghost" data-action="assist" data-stone="memory">Assist</button>
-                </div>
-              </div>
-            </div>
-          </article>
-
-          <!-- SILENCE -->
-          <article class="stone" data-stone="silence">
-            <header class="stoneHead">
-              <div>
-                <div class="stoneName">Stone of Silence</div>
-                <div class="stoneSub">Containment</div>
-              </div>
-              <div class="stoneMeters">
-                <div class="miniLabel">Progress</div>
-                <div class="pips" id="prog_silence"></div>
-              </div>
-            </header>
-
-            <div class="stoneBody">
-              <div class="stoneDisk" id="disk_silence" aria-hidden="true">
-                <div class="cracks" id="crack_silence"></div>
-              </div>
-
-              <div class="stoneInfo">
-                <div class="line"><span class="miniLabel">Stress</span><span class="stressRow" id="stress_silence"></span></div>
-                <div class="rule" id="rule_silence"></div>
-
-                <div class="stoneActions">
-                  <button class="btn" data-action="attempt" data-stone="silence">Attempt</button>
-                  <button class="btn btn--ghost" data-action="assist" data-stone="silence">Assist</button>
-                </div>
-              </div>
-            </div>
-          </article>
-
-        </div>
-      </section>
-
-      <!-- RIGHT: LOG / INSTRUCTIONS -->
-      <section class="panel logPanel" aria-label="Ritual Log">
-        <div class="panelHead">
-          <div>
-            <div class="panelTitle">DM / Table Log</div>
-            <div class="panelSub">This is what players should “feel” happening</div>
-          </div>
-          <button class="btn btn--small btn--ghost" id="btnClearLog">Clear</button>
-        </div>
-
-        <div class="log" id="log"></div>
-
-        <div class="miniHelp">
-          <div class="miniHelpTitle">How to run it</div>
-          <ol>
-            <li>Click <b>Roll Event</b> then <b>Apply Event</b> each round.</li>
-            <li>Players choose a stone, click <b>Attempt</b>, then you type their result.</li>
-            <li>Progress 3 locks a stone. Stress 4 fractures it (fail state).</li>
-            <li>Press <b>DM Dock</b> (or <kbd>`</kbd>) for manual overrides.</li>
-          </ol>
-        </div>
-      </section>
-
-    </main>
 
     <!-- MODAL -->
     <div id="modal" class="modal" aria-hidden="true" role="dialog">
