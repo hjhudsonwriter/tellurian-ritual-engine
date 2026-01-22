@@ -527,6 +527,6 @@ body::after{
   bottom: -24px;
   transform: translateX(-50%);
   width: 420px;
-  z-index: 2;
+  z-index: 3;
 }
 }
