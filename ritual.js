@@ -372,11 +372,32 @@
 
   // ---------- Round ----------
   function nextRound(){
-    if(state.phase!=="running") return;
-    state.round = clamp(state.round+1, 1, state.roundMax);
-    log("Round Advances", `The chamber shifts. Roots redraw their lines across the stone.`);
+  if(state.phase!=="running") return;
+
+  // If we're already at the final round, Next Round becomes "Resolve Finale"
+  if(state.round >= state.roundMax){
+    if(allLocked()){
+      // Force a clear finale moment even if it already sealed earlier
+      state.phase = "sealed";
+      playSfx("seal");
+      log("Final Seal", "The last glyph falls quiet. The roots recoil. The earth closes like an eyelid. The Heartwood sleeps.");
+      toastMsg("RITUAL COMPLETE: The Heartwood is sealed.");
+    } else {
+      state.phase = "failed";
+      playSfx("interrupt");
+      log("Time Runs Out", "The lullaby falters. The chamber convulses. The binding collapses under its own strain.");
+      toastMsg("RITUAL FAILED: Time ran out (not all stones locked).");
+    }
     renderAll();
+    return;
   }
+
+  // Normal advance
+  state.round = clamp(state.round+1, 1, state.roundMax);
+  log("Round Advances", "The chamber shifts. Roots redraw their lines across the stone.");
+  renderAll();
+}
+
   function prevRound(){
     state.round = clamp(state.round-1, 1, state.roundMax);
     renderAll();
