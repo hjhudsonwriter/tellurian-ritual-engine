@@ -161,6 +161,7 @@ body::before{
   filter: blur(18px);
   opacity:.75;
   animation: haze 10s ease-in-out infinite;
+  mask-image: radial-gradient(circle at 50% 46%, black 58%, transparent 70%);
   pointer-events:none;
 }
 @keyframes haze{
@@ -172,6 +173,7 @@ body::before{
 /* Center heartwood */
 .arenaCenter{
   position:absolute;
+  z-index: 3;
   left:50%; 
   top:50%;
   transform: translate(-50%, -50%);
@@ -246,7 +248,7 @@ body::before{
 }
 .stone--left{ left: 24px; top: 50%; transform: translateY(-50%); }
 .stone--right{ right: 24px; top: 50%; transform: translateY(-50%); }
-.stone--bottom{ left: 50%; bottom: 18px; transform: translateX(-50%); width: 420px; }
+ left: 50%; bottom: 18px; transform: translateX(-50%); width: 420px; }
 
 .stoneOrbitTop{
   display:flex; justify-content:space-between; align-items:center;
@@ -278,6 +280,14 @@ body::before{
   z-index:1;
   overflow:hidden;
   box-shadow: 0 18px 44px rgba(0,0,0,.70);
+}
+
+/* Silence stone is visually subordinate to the Heartwood */
+.stone--bottom{
+  padding-top: 10px;
+  padding-bottom: 10px;
+  background: rgba(0,0,0,.18);
+  box-shadow: 0 12px 40px rgba(0,0,0,.55);
 }
 
 /* Stone images */
@@ -484,5 +494,11 @@ body::before{
   .hudBlock, .hudBlock--wide{min-width:0}
   .arena{height: 740px}
   .stone--left,.stone--right{position:relative; left:auto; right:auto; top:auto; transform:none; margin:12px auto; width:min(520px, 92vw)}
-  .stone--bottom{position:relative; left:auto; transform:none; width:min(520px, 92vw); margin:12px auto}
+  .stone--bottom{
+  left: 50%;
+  bottom: -24px;
+  transform: translateX(-50%);
+  width: 420px;
+  z-index: 2;
+}
 }
