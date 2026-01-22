@@ -63,6 +63,12 @@
 
   const toast = $("toast");
 
+    // Banner (cinematic popup)
+  const banner = $("banner");
+  const bannerKicker = $("bannerKicker");
+  const bannerTitle = $("bannerTitle");
+  const bannerText = $("bannerText");
+
   // ---------- Audio Engine (requires user click) ----------
   const audio = {
     enabled: false,
@@ -265,6 +271,7 @@
     if(state.phase!=="failed"){
       if(s.weight.stress>=4 || s.memory.stress>=4 || s.silence.stress>=4){
         state.phase="failed";
+                showBanner("RITUAL COLLAPSE", "A Glyph Fractures", "Stress reached 4. The binding fails.", 2200);
         playSfx("interrupt");
         log("Glyph Fracture", "A stone screams as it cracks. The binding collapses.");
         toastMsg("FAILED: A stone fractured (Stress 4).");
@@ -274,6 +281,7 @@
     // seal check (all locked)
     if(state.phase==="running" && allLocked()){
       state.phase="sealed";
+            showBanner("FINAL SEAL", "The Heartwood Sleeps", "All stones locked. The earth closes.", 2400);
       playSfx("seal");
       log("Seal Set", "The roots recoil. The earth closes like an eyelid. The Heartwood sleeps.");
       toastMsg("SEALED: All stones locked.");
@@ -306,6 +314,20 @@
     toast.__t=setTimeout(()=>toast.classList.remove("show"), 2200);
   }
 
+    function showBanner(kicker, title, text, ms=1700){
+    if(!banner) return;
+    bannerKicker.textContent = kicker || "";
+    bannerTitle.textContent = title || "";
+    bannerText.textContent = text || "";
+    banner.classList.add("show");
+    banner.setAttribute("aria-hidden","false");
+    clearTimeout(banner.__t);
+    banner.__t = setTimeout(()=>{
+      banner.classList.remove("show");
+      banner.setAttribute("aria-hidden","true");
+    }, ms);
+  }
+
   // ---------- State mutations ----------
   function setLockedIfComplete(id){
     const st=state.stones[id];
@@ -314,6 +336,7 @@
       if(!st.locked){
         st.locked=true;
         playSfx("lock");
+                showBanner("STONE LOCKED", cap(id), "The glyph falls quiet.", 1400);
         log("Stone Locked", `${cap(id)} locks into place. The runes go still.`);
       }
     } else {
@@ -326,7 +349,7 @@
     if(opts.event && st.locked) return;
     st.stress = clamp(st.stress+n, 0, 4);
     playSfx("stress");
-    log("Stress Rises", `${cap(id)} strains. Hairline cracks creep across the glyph.`);
+        showBanner("STONE STRAIN", `${cap(id)}`, "+1 Stress", 900);
     renderAll();
   }
 
@@ -340,7 +363,7 @@
     const st=state.stones[id];
     st.progress = clamp(st.progress+n, 0, 3);
     playSfx("progress");
-    log("Progress", `${cap(id)} holds. The binding strengthens.`);
+        showBanner("BINDING HOLDS", `${cap(id)}`, "+1 Progress", 900);
     setLockedIfComplete(id);
     renderAll();
   }
@@ -353,19 +376,24 @@
   }
 
   // ---------- Events ----------
-  function rollEvent(){
+    function rollEvent(){
     state.eventIndex = Math.floor(Math.random()*events.length);
     renderEvent();
+    const ev = events[state.eventIndex];
+    showBanner("HEARTWOOD EVENT", ev.title, "Ready to apply.", 900);
     toastMsg("Event rolled.");
   }
+
   function cycleEvent(dir){
     state.eventIndex = (state.eventIndex + dir + events.length) % events.length;
     renderEvent();
   }
-  function applyEvent(){
+  
+    function applyEvent(){
     if(state.phase!=="running") return;
     const ev = events[state.eventIndex];
     ev.apply();
+    showBanner("HEARTWOOD EVENT", ev.title, ev.hint, 1600);
     toastMsg(ev.title);
     renderAll();
   }
