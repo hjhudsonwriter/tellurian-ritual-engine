@@ -247,6 +247,26 @@ if(ruleEl){
     ruleEl.textContent = `DC = 10 + Slot + Stress. Base ${dcBase} (slot adds more). Arcana/Religion.`;
   }
 }
+      // --- Crack overlays (show based on Stress) ---
+  const crackEl = $("crack_" + id);
+  if (crackEl) {
+    const s = st.stress || 0;
+
+    if (s <= 0 || st.locked) {
+      crackEl.style.opacity = "0";
+      crackEl.style.backgroundImage = "";
+    } else if (s === 1) {
+      crackEl.style.opacity = "0.55";
+      crackEl.style.backgroundImage = "var(--img-crack-1)";
+    } else if (s === 2) {
+      crackEl.style.opacity = "0.70";
+      crackEl.style.backgroundImage = "var(--img-crack-2)";
+    } else {
+      // Stress 3 shows the worst visible cracking (Stress 4 = failure state)
+      crackEl.style.opacity = "0.85";
+      crackEl.style.backgroundImage = "var(--img-crack-3)";
+    }
+  }
     } // <-- ADD THIS LINE (closes renderStone)
 
   function renderAll(){
