@@ -4,10 +4,11 @@
   const $ = (id) => document.getElementById(id);
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 
-  // ---------- Elements (guarded) ----------
+  // ---------- Elements ----------
   const elRoundNow = $("roundNow");
   const elRoundMax = $("roundMax");
   const elRoundPips = $("roundPips");
+
   const elEventTitle = $("eventTitle");
   const elEventHint = $("eventHint");
 
@@ -16,8 +17,18 @@
 
   const elMemoryTarget = $("memoryTarget");
 
-  const sealOverlay = $("sealOverlay");
+  const btnSound = $("btnSound");
+  const btnDock = $("btnDock");
+  const btnRollEvent = $("btnRollEvent");
+  const btnApplyEvent = $("btnApplyEvent");
+  const btnPrevEvent = $("btnPrevEvent");
+  const btnNextEvent = $("btnNextEvent");
+  const btnNextRound = $("btnNextRound");
 
+  const logEl = $("log");
+  const btnClearLog = $("btnClearLog");
+
+  // Modal
   const modal = $("modal");
   const modalTitle = $("modalTitle");
   const modalBody = $("modalBody");
@@ -32,10 +43,13 @@
   const btnApply = $("btnApply");
   const modalFoot = $("modalFoot");
 
+  // DM Dock
   const dmDock = $("dmDock");
+  const btnDockClose = $("btnDockClose");
+
   const btnPrevRound = $("btnPrevRound");
-  const btnNextRound = $("btnNextRound");
-  const btnAutoEvent = $("btnAutoEvent");
+  const btnNextRoundDock = $("btnNextRoundDock");
+  const btnRollEventDock = $("btnRollEventDock");
 
   const stressStoneSel = $("stressStone");
   const btnStressPlus = $("btnStressPlus");
@@ -45,589 +59,521 @@
   const btnProgPlus = $("btnProgPlus");
   const btnProgMinus = $("btnProgMinus");
 
-  const btnInterrupt = $("btnInterrupt");
-  const btnClearInterrupt = $("btnClearInterrupt");
-  const btnSealTest = $("btnSealTest");
   const btnReset = $("btnReset");
 
   const toast = $("toast");
+
+  // ---------- Audio Engine (requires user click) ----------
+  const audio = {
+    enabled: false,
+    ctx: null,
+    heartbeat: null,
+    sfx: {},
+  };
+
+  function audioPath(name){ return `assets/audio/${name}`; }
+
+  async function enableAudio() {
+    try {
+      if (!audio.ctx) audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      await audio.ctx.resume();
+
+      // Heartbeat loop
+      audio.heartbeat = new Audio(audioPath("heartbeat_loop.mp3"));
+      audio.heartbeat.loop = true;
+      audio.heartbeat.volume = 0.55;
+
+      // One-shots
+      audio.sfx.progress = new Audio(audioPath("sfx_progress.mp3"));
+      audio.sfx.stress = new Audio(audioPath("sfx_stress.mp3"));
+      audio.sfx.lock = new Audio(audioPath("sfx_lock.mp3"));
+      audio.sfx.interrupt = new Audio(audioPath("sfx_interrupt.mp3"));
+      audio.sfx.seal = new Audio(audioPath("sfx_seal.mp3"));
+
+      audio.enabled = true;
+      btnSound.textContent = "Sound Enabled";
+      btnSound.classList.add("btn--primary");
+
+      // start heartbeat
+      audio.heartbeat.currentTime = 0;
+      await audio.heartbeat.play();
+
+      toastMsg("Sound enabled.");
+    } catch (e) {
+      console.warn(e);
+      toastMsg("Sound blocked by browser. Try clicking Enable Sound again.");
+    }
+  }
+
+  function playSfx(key){
+    if (!audio.enabled) return;
+    const s = audio.sfx[key];
+    if (!s) return;
+    try {
+      s.currentTime = 0;
+      s.play().catch(()=>{});
+    } catch {}
+  }
+
+  function setHeartbeatRate(rate){
+    if (!audio.enabled || !audio.heartbeat) return;
+    audio.heartbeat.playbackRate = clamp(rate, 0.75, 1.45);
+  }
 
   // ---------- State ----------
   const state = {
     round: 1,
     roundMax: 8,
     eventIndex: 0,
-    interruption: false,
-    phase: "running", // running | finaltest | sealed | failed
+    phase: "running", // running | failed | sealed
     stones: {
-      weight: { name: "Stone of Weight", progress: 0, stress: 0, locked: false },
-      memory: { name: "Stone of Memory", progress: 0, stress: 0, locked: false },
-      silence: { name: "Stone of Silence", progress: 0, stress: 0, locked: false },
+      weight:  { progress: 0, stress: 0, locked: false },
+      memory:  { progress: 0, stress: 0, locked: false },
+      silence: { progress: 0, stress: 0, locked: false },
     },
-    // memory mini-game target number
-    memoryTargetByRound: (r) => (r <= 2 ? 6 : r <= 5 ? 7 : 8),
-    // modal context
     modalCtx: null,
   };
 
-  // ---------- Heartwood Events (simple + safe) ----------
+  function memoryTargetByRound(r){
+    return (r <= 2) ? 6 : (r <= 5) ? 7 : 8;
+  }
+
+  // ---------- Events ----------
   const events = [
-    {
-      title: "Root Surge",
-      hint: "Weight Stone +1 Stress (unless locked).",
-      apply: () => addStress("weight", 1, { fromEvent: true }),
-    },
-    {
-      title: "Memory Pulse",
-      hint: "Memory Stone +1 Stress (unless locked).",
-      apply: () => addStress("memory", 1, { fromEvent: true }),
-    },
-    {
-      title: "Arcane Feedback",
-      hint: "Silence Stone +1 Stress (unless locked).",
-      apply: () => addStress("silence", 1, { fromEvent: true }),
-    },
-    {
-      title: "False Calm",
-      hint: "No stress. The Heartwood listens.",
-      apply: () => toastMsg("False Calm…"),
-    },
-    {
-      title: "Echoing Fear",
-      hint: "All unlocked stones +1 Stress.",
-      apply: () => {
-        ["weight", "memory", "silence"].forEach((id) => addStress(id, 1, { fromEvent: true }));
-      },
-    },
-    {
-      title: "Moment of Stillness",
-      hint: "Remove 1 Stress from the most strained stone.",
-      apply: () => {
-        const ids = ["weight", "memory", "silence"].sort(
-          (a, b) => state.stones[b].stress - state.stones[a].stress
-        );
-        removeStress(ids[0], 1);
-      },
-    },
+    { title:"Root Surge",      hint:"Weight +1 Stress (unless locked).", apply:()=>addStress("weight",1,{event:true}) },
+    { title:"Memory Pulse",    hint:"Memory +1 Stress (unless locked).", apply:()=>addStress("memory",1,{event:true}) },
+    { title:"Arcane Feedback", hint:"Silence +1 Stress (unless locked).", apply:()=>addStress("silence",1,{event:true}) },
+    { title:"False Calm",      hint:"No change. The Heartwood listens.", apply:()=>log("False Calm", "A hush spreads through the chamber. For a heartbeat, the roots stop fighting.") },
+    { title:"Echoing Fear",    hint:"All unlocked stones +1 Stress.",    apply:()=>["weight","memory","silence"].forEach(id=>addStress(id,1,{event:true})) },
+    { title:"Moment of Stillness", hint:"Remove 1 Stress from most strained stone.", apply:()=>{
+      const ids = ["weight","memory","silence"].sort((a,b)=>state.stones[b].stress - state.stones[a].stress);
+      removeStress(ids[0],1);
+      log("Moment of Stillness", "The strain eases, like breath leaving lungs.");
+    }},
   ];
 
-  // ---------- Rendering ----------
-  function renderRoundPips() {
-    if (!elRoundPips) return;
+  // ---------- UI Render ----------
+  function renderRoundPips(){
     elRoundPips.innerHTML = "";
-    for (let i = 1; i <= state.roundMax; i++) {
-      const d = document.createElement("div");
-      d.className = "pip" + (i <= state.round ? " on" : "");
+    for(let i=1;i<=state.roundMax;i++){
+      const d=document.createElement("div");
+      d.className = "pip" + (i<=state.round ? " on":"");
       elRoundPips.appendChild(d);
     }
   }
 
-  function renderEvent() {
+  function renderEvent(){
     const ev = events[state.eventIndex] || events[0];
-    if (elEventTitle) elEventTitle.textContent = ev.title;
-    if (elEventHint) elEventHint.textContent = ev.hint;
+    elEventTitle.textContent = ev.title;
+    elEventHint.textContent = ev.hint;
   }
 
-  function renderMemoryTarget() {
-    const t = state.memoryTargetByRound(state.round);
-    if (elMemoryTarget) elMemoryTarget.textContent = String(t);
+  function renderMemoryTarget(){
+    elMemoryTarget.textContent = String(memoryTargetByRound(state.round));
   }
 
-  function renderStone(id) {
+  function renderStone(id){
     const st = state.stones[id];
-    if (!st) return;
-
-    // Progress pips (0..3)
-    const progEl = $("prog_" + id);
-    if (progEl) {
-      progEl.innerHTML = "";
-      for (let i = 1; i <= 3; i++) {
-        const p = document.createElement("div");
-        p.className = "pip" + (i <= st.progress ? " on" : "");
-        progEl.appendChild(p);
-      }
-      if (st.locked) progEl.classList.add("locked");
-      else progEl.classList.remove("locked");
+    // Progress pips
+    const progEl = $("prog_"+id);
+    progEl.innerHTML = "";
+    for(let i=1;i<=3;i++){
+      const p=document.createElement("div");
+      p.className="pip"+(i<=st.progress?" on":"");
+      progEl.appendChild(p);
     }
 
-    // Stress pips (0..4)
-    const stressEl = $("stress_" + id);
-    if (stressEl) {
-      stressEl.innerHTML = "";
-      for (let i = 0; i <= 4; i++) {
-        const s = document.createElement("div");
-        const on = i > 0 && i <= st.stress;
-        s.className = "stressPip" + (on ? " on" : "");
-        if (i === 4) s.classList.add("break");
-        stressEl.appendChild(s);
-      }
+    // Stress pips
+    const stressEl = $("stress_"+id);
+    stressEl.innerHTML = "";
+    for(let i=1;i<=4;i++){
+      const s=document.createElement("div");
+      s.className="stressPip"+(i<=st.stress?" on":"");
+      stressEl.appendChild(s);
     }
 
-    // Cracks visual (swap overlay by stress)
-const crackEl = $("crack_" + id);
-if (crackEl) {
-  let crackImg = "";
-  if (st.stress === 1) crackImg = "assets/img/cracks_1.png";
-  if (st.stress === 2) crackImg = "assets/img/cracks_2.png";
-  if (st.stress >= 3) crackImg = "assets/img/cracks_3.png";
+    // Crack overlay
+    const crackEl = $("crack_"+id);
+    let crackImg="";
+    if(st.stress===1) crackImg="assets/img/cracks_1.png";
+    if(st.stress===2) crackImg="assets/img/cracks_2.png";
+    if(st.stress>=3) crackImg="assets/img/cracks_3.png";
+    crackEl.style.backgroundImage = crackImg ? `url("${crackImg}")` : "none";
+    crackEl.style.opacity = st.stress===0 ? "0" : "1";
 
-  crackEl.style.backgroundImage = crackImg ? `url("${crackImg}")` : "none";
-  crackEl.style.opacity = st.stress === 0 ? "0" : "1";
-  crackEl.style.filter = st.stress >= 3 ? "drop-shadow(0 0 18px rgba(110,240,166,.25))" : "none";
-}
-
-    // Disk glow
-    const diskEl = $("disk_" + id);
-    if (diskEl) {
-      diskEl.classList.toggle("locked", !!st.locked);
-      diskEl.classList.toggle("danger", st.stress >= 3);
+    // Rule text
+    const ruleEl = $("rule_"+id);
+    if(id==="weight"){
+      const dc=12+st.stress;
+      ruleEl.textContent = `DC ${dc} (12 + Stress). Athletics/Acrobatics. Assist = Advantage toggle.`;
     }
-
-    // Rule line (dynamic DCs)
-    const ruleEl = $("rule_" + id);
-    if (ruleEl) {
-      if (id === "weight") {
-        const dc = 12 + st.stress;
-        ruleEl.textContent = `DC ${dc} (12 + Stress). Athletics or Acrobatics. Optional: Advantage (risk +Stress on fail).`;
-      }
-      if (id === "silence") {
-        ruleEl.textContent = `DC = 10 + Slot + Stress (${st.stress}). Arcana or Religion. Or Exhaustion = auto success (+Stress).`;
-      }
+    if(id==="memory"){
+      const t=memoryTargetByRound(state.round);
+      ruleEl.textContent = `Roll 2d6 vs Target ${t}. Exact: +Progress and -Stress. ±1: +Progress. Miss by 2+: +Stress.`;
+    }
+    if(id==="silence"){
+      const dcBase = 10 + st.stress;
+      ruleEl.textContent = `DC = 10 + Slot + Stress. Currently base is ${dcBase} (slot adds more). Arcana/Religion.`;
     }
   }
 
-  function renderAllStones() {
-    renderStone("weight");
-    renderStone("memory");
-    renderStone("silence");
-  }
-
-  function updateHeartwood() {
-    const s = state.stones;
-    const totalStress = s.weight.stress + s.memory.stress + s.silence.stress;
-    const totalProg = s.weight.progress + s.memory.progress + s.silence.progress;
-
-    // Pulse speed: faster with stress, slower with progress/locks
-    const locks = [s.weight.locked, s.memory.locked, s.silence.locked].filter(Boolean).length;
-    const base = 2.6; // seconds
-    const speed = clamp(base - (totalStress * 0.18) + (locks * 0.20), 1.1, 3.2);
-    document.documentElement.style.setProperty("--pulse", `${speed}s`);
-
-    // Glow color shifts with stress (green -> amber -> red)
-    let glow = "rgba(110,240,166,0.95)";
-    if (totalStress >= 7) glow = "rgba(255,204,102,0.95)";
-    if (totalStress >= 10) glow = "rgba(255,93,108,0.95)";
-    document.documentElement.style.setProperty("--glow", glow);
-
-    if (elPulseLabel) {
-      const label =
-        state.phase === "sealed" ? "Dormant" :
-        state.phase === "failed" ? "Racing" :
-        totalStress <= 2 ? "Steady" :
-        totalStress <= 6 ? "Strained" :
-        totalStress <= 9 ? "Wild" : "Critical";
-      elPulseLabel.textContent = label;
-    }
-
-    if (elStateLabel) {
-      const label =
-        state.phase === "sealed" ? "Seal set. Heartwood sleeping." :
-        state.phase === "failed" ? "Ritual collapse." :
-        state.phase === "finaltest" ? "Final Seal Test" :
-        "Binding in progress";
-      elStateLabel.textContent = label;
-    }
-
-    // Seal overlay animation
-    if (sealOverlay) {
-      const allLocked = allStonesLocked();
-      const show = state.phase === "sealed" || allLocked;
-      sealOverlay.style.transition = "opacity 1200ms ease";
-      sealOverlay.style.opacity = show ? "1" : "0";
-      sealOverlay.classList.toggle("sealOverlay--spin", show);
-    }
-
-    // Auto transition to final test if all locked
-    if (state.phase === "running" && allStonesLocked()) {
-      // Don’t force modal; just nudge.
-      toastMsg("All stones locked. Ready for Final Seal Test.");
-    }
-
-    // Failure check
-    if (state.phase !== "failed" && (s.weight.stress >= 4 || s.memory.stress >= 4 || s.silence.stress >= 4)) {
-      state.phase = "failed";
-      toastMsg("A glyph fractures. The binding falters.");
-    }
-
-    // Resolve check
-    if (state.phase === "finaltest" && allFinalsSet()) {
-      // Determine outcome by failures
-      const fails = Object.values(state.finalResults).filter((x) => x === "fail").length;
-      if (fails === 0) {
-        state.phase = "sealed";
-        toastMsg("Seal set. Heartwood sleeps.");
-      } else {
-        state.phase = "sealed"; // still sealed, but imperfect
-        toastMsg(`Seal set with imperfections (${fails} failure${fails>1?"s":""}).`);
-      }
-    }
-  }
-
-  function renderAll() {
-    if (elRoundNow) elRoundNow.textContent = String(state.round);
-    if (elRoundMax) elRoundMax.textContent = String(state.roundMax);
+  function renderAll(){
+    elRoundNow.textContent = String(state.round);
+    elRoundMax.textContent = String(state.roundMax);
     renderRoundPips();
     renderEvent();
     renderMemoryTarget();
-    renderAllStones();
-    updateHeartwood();
+    renderStone("weight"); renderStone("memory"); renderStone("silence");
+    updatePulse();
   }
 
-  // ---------- Helpers ----------
-  function allStonesLocked() {
-    const s = state.stones;
+  function updatePulse(){
+    const s=state.stones;
+    const totalStress = s.weight.stress + s.memory.stress + s.silence.stress;
+    const locks = [s.weight.locked, s.memory.locked, s.silence.locked].filter(Boolean).length;
+
+    // heartbeat speed + CSS pulse
+    const speed = clamp(2.6 - totalStress*0.18 + locks*0.20, 1.2, 3.2);
+    document.documentElement.style.setProperty("--pulse", `${speed}s`);
+
+    const hbRate = clamp(1.0 + totalStress*0.05 - locks*0.03, 0.85, 1.35);
+    setHeartbeatRate(hbRate);
+
+    // glow shifts slightly with stress
+    let glow="rgba(110,240,166,0.95)";
+    if(totalStress>=7) glow="rgba(255,204,102,0.95)";
+    if(totalStress>=10) glow="rgba(255,93,108,0.95)";
+    document.documentElement.style.setProperty("--glow", glow);
+
+    const label =
+      state.phase==="sealed" ? "Dormant" :
+      state.phase==="failed" ? "Racing" :
+      totalStress<=2 ? "Steady" :
+      totalStress<=6 ? "Strained" :
+      totalStress<=9 ? "Wild" : "Critical";
+
+    elPulseLabel.textContent = label;
+
+    const stateTxt =
+      state.phase==="sealed" ? "Seal set. Heartwood sleeping." :
+      state.phase==="failed" ? "Ritual collapse." :
+      "Binding in progress";
+
+    elStateLabel.textContent = stateTxt;
+
+    // fail check
+    if(state.phase!=="failed"){
+      if(s.weight.stress>=4 || s.memory.stress>=4 || s.silence.stress>=4){
+        state.phase="failed";
+        playSfx("interrupt");
+        log("Glyph Fracture", "A stone screams as it cracks. The binding collapses.");
+        toastMsg("FAILED: A stone fractured (Stress 4).");
+      }
+    }
+
+    // seal check (all locked)
+    if(state.phase==="running" && allLocked()){
+      state.phase="sealed";
+      playSfx("seal");
+      log("Seal Set", "The roots recoil. The earth closes like an eyelid. The Heartwood sleeps.");
+      toastMsg("SEALED: All stones locked.");
+    }
+  }
+
+  function allLocked(){
+    const s=state.stones;
     return s.weight.locked && s.memory.locked && s.silence.locked;
   }
 
-  function setLockedIfComplete(id) {
-    const st = state.stones[id];
-    if (!st) return;
-    if (st.progress >= 3) {
-      st.progress = 3;
-      st.locked = true;
-    } else {
-      st.locked = false;
-    }
+  // ---------- Log / Toast ----------
+  function log(title, text){
+    if(!logEl) return;
+    const e=document.createElement("div");
+    e.className="entry";
+    const ts = new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+    e.innerHTML = `
+      <div class="entryMeta"><span>Round ${state.round}</span><span>${ts}</span></div>
+      <div class="entryTitle">${title}</div>
+      <div class="entryText">${text}</div>
+    `;
+    logEl.prepend(e);
   }
 
-  function toastMsg(msg) {
-    if (!toast) return;
+  function toastMsg(msg){
     toast.textContent = msg;
     toast.classList.add("show");
-    window.clearTimeout(toast.__t);
-    toast.__t = window.setTimeout(() => toast.classList.remove("show"), 2200);
+    clearTimeout(toast.__t);
+    toast.__t=setTimeout(()=>toast.classList.remove("show"), 2200);
   }
 
-  function addStress(id, n = 1, opts = {}) {
-    const st = state.stones[id];
-    if (!st) return;
-    if (opts.fromEvent && st.locked) return; // locked stones ignore event stress
-    st.stress = clamp(st.stress + n, 0, 4);
-    renderStone(id);
-    updateHeartwood();
-  }
-
-  function removeStress(id, n = 1) {
-    const st = state.stones[id];
-    if (!st) return;
-    st.stress = clamp(st.stress - n, 0, 4);
-    renderStone(id);
-    updateHeartwood();
-  }
-
-  function addProgress(id, n = 1) {
-    const st = state.stones[id];
-    if (!st) return;
-    st.progress = clamp(st.progress + n, 0, 3);
-    setLockedIfComplete(id);
-    renderStone(id);
-    updateHeartwood();
-  }
-
-  function removeProgress(id, n = 1) {
-    const st = state.stones[id];
-    if (!st) return;
-    st.progress = clamp(st.progress - n, 0, 3);
-    setLockedIfComplete(id);
-    renderStone(id);
-    updateHeartwood();
-  }
-
-  // ---------- Event control ----------
-  function cycleEvent(dir = 1) {
-    state.eventIndex = (state.eventIndex + dir + events.length) % events.length;
-    renderEvent();
-  }
-
-  function rollEvent() {
-    state.eventIndex = Math.floor(Math.random() * events.length);
-    renderEvent();
-    toastMsg("Event rolled.");
-  }
-
-  function applyEvent() {
-    if (state.phase === "failed") return;
-    const ev = events[state.eventIndex] || events[0];
-    try {
-      ev.apply();
-      toastMsg(ev.title);
-    } catch {
-      toastMsg("Event failed to apply.");
+  // ---------- State mutations ----------
+  function setLockedIfComplete(id){
+    const st=state.stones[id];
+    if(st.progress>=3){
+      st.progress=3;
+      if(!st.locked){
+        st.locked=true;
+        playSfx("lock");
+        log("Stone Locked", `${cap(id)} locks into place. The runes go still.`);
+      }
+    } else {
+      st.locked=false;
     }
+  }
+
+  function addStress(id, n=1, opts={}){
+    const st=state.stones[id];
+    if(opts.event && st.locked) return;
+    st.stress = clamp(st.stress+n, 0, 4);
+    playSfx("stress");
+    log("Stress Rises", `${cap(id)} strains. Hairline cracks creep across the glyph.`);
     renderAll();
   }
 
-  // ---------- Modal mini-game handling ----------
-  function openModal(ctx) {
-    if (!modal) return;
-    state.modalCtx = ctx;
+  function removeStress(id, n=1){
+    const st=state.stones[id];
+    st.stress = clamp(st.stress-n, 0, 4);
+    renderAll();
+  }
 
-    // Reset fields
-    if (rollInput) rollInput.value = "";
-    if (slotInput) slotInput.value = "0";
-    if (advSelect) advSelect.value = "no";
-    if (memoryAdjust) memoryAdjust.value = "0";
+  function addProgress(id, n=1){
+    const st=state.stones[id];
+    st.progress = clamp(st.progress+n, 0, 3);
+    playSfx("progress");
+    log("Progress", `${cap(id)} holds. The binding strengthens.`);
+    setLockedIfComplete(id);
+    renderAll();
+  }
 
-    if (modalFoot) modalFoot.textContent = "";
+  function removeProgress(id, n=1){
+    const st=state.stones[id];
+    st.progress = clamp(st.progress-n, 0, 3);
+    setLockedIfComplete(id);
+    renderAll();
+  }
 
-    // Configure per stone/action
-    const { stone, action } = ctx;
+  // ---------- Events ----------
+  function rollEvent(){
+    state.eventIndex = Math.floor(Math.random()*events.length);
+    renderEvent();
+    toastMsg("Event rolled.");
+  }
+  function cycleEvent(dir){
+    state.eventIndex = (state.eventIndex + dir + events.length) % events.length;
+    renderEvent();
+  }
+  function applyEvent(){
+    if(state.phase!=="running") return;
+    const ev = events[state.eventIndex];
+    ev.apply();
+    toastMsg(ev.title);
+    renderAll();
+  }
+
+  // ---------- Round ----------
+  function nextRound(){
+    if(state.phase!=="running") return;
+    state.round = clamp(state.round+1, 1, state.roundMax);
+    log("Round Advances", `The chamber shifts. Roots redraw their lines across the stone.`);
+    renderAll();
+  }
+  function prevRound(){
+    state.round = clamp(state.round-1, 1, state.roundMax);
+    renderAll();
+  }
+
+  // ---------- Modal ----------
+  function openModal(stone, action){
+    if(state.phase!=="running") return;
+    state.modalCtx = { stone, action };
+
+    rollInput.value = "";
+    slotInput.value = "0";
+    advSelect.value = "no";
+    memoryAdjust.value = "0";
+    modalFoot.textContent = "";
+
+    modalTitle.textContent = (action==="assist") ? "Assist" : "Attempt";
+
+    slotField.style.display = (stone==="silence") ? "block" : "none";
+    advField.style.display = (stone==="weight") ? "block" : "none";
+    memoryAdjustField.style.display = (stone==="memory" && action==="assist") ? "block" : "none";
+
     const st = state.stones[stone];
+    const t = memoryTargetByRound(state.round);
 
-    if (modalTitle) modalTitle.textContent = action === "assist" ? "Assist" : "Attempt";
-
-    // show/hide special fields
-    if (slotField) slotField.style.display = stone === "silence" ? "block" : "none";
-    if (advField) advField.style.display = stone === "weight" ? "block" : "none";
-    if (memoryAdjustField) memoryAdjustField.style.display = (stone === "memory" && action === "assist") ? "block" : "none";
-
-    const memTarget = state.memoryTargetByRound(state.round);
-
-    let body = "";
-    if (stone === "weight") {
-      const dc = 12 + st.stress;
-      body = `<div class="modal__lead">Hold the chamber steady.</div>
-              <div class="modal__rule">DC <b>${dc}</b> (12 + Stress). Enter the player’s check result.</div>
-              <div class="modal__rule">If Advantage is used and the roll fails, Weight gains +1 Stress.</div>`;
-    } else if (stone === "memory") {
-      body = `<div class="modal__lead">Match the Heartwood’s rhythm.</div>
-              <div class="modal__rule">Target this round: <b>${memTarget}</b>. Enter the player’s <b>2d6</b> total.</div>
-              <div class="modal__rule">Exact match: +1 Progress and -1 Stress. Within ±1: +1 Progress. Miss by 2+: +1 Stress.</div>`;
-      if (action === "assist") {
-        body += `<div class="modal__rule">Assist can shift the target by ±1 (use Target Adjust).</div>`;
-      }
-    } else if (stone === "silence") {
-      body = `<div class="modal__lead">Press the magic down.</div>
-              <div class="modal__rule">DC = 10 + Slot + Stress. Enter the player’s Arcana/Religion result.</div>
-              <div class="modal__rule">If using Exhaustion instead of a slot: set Slot to 0 and enter <b>999</b> as the roll (auto pass), then manually add +1 Stress via DM dock.</div>`;
+    if(stone==="weight"){
+      const dc=12+st.stress;
+      modalBody.innerHTML =
+        `<b>Weight</b>: Hold the chamber steady.<br>
+         Enter the player’s check result vs <b>DC ${dc}</b>.<br>
+         If Assist (Advantage) is used and it fails, add +1 Stress.`;
+    } else if(stone==="memory"){
+      modalBody.innerHTML =
+        `<b>Memory</b>: Match the rhythm.<br>
+         Enter the <b>2d6 total</b> vs target <b>${t}</b>.<br>
+         Exact: +Progress and -Stress. ±1: +Progress. Miss by 2+: +Stress.`;
+    } else if(stone==="silence"){
+      modalBody.innerHTML =
+        `<b>Silence</b>: Press the magic down.<br>
+         Enter Arcana/Religion result vs <b>DC = 10 + Slot + Stress</b>.<br>
+         Choose Slot Level (0 if none).`;
     }
 
-    if (modalBody) modalBody.innerHTML = body;
-
     modal.classList.add("open");
-    modal.setAttribute("aria-hidden", "false");
-    // focus
-    setTimeout(() => rollInput && rollInput.focus(), 50);
+    modal.setAttribute("aria-hidden","false");
+    setTimeout(()=>rollInput.focus(), 40);
   }
 
-  function closeModal() {
-    if (!modal) return;
+  function closeModal(){
     modal.classList.remove("open");
-    modal.setAttribute("aria-hidden", "true");
-    state.modalCtx = null;
+    modal.setAttribute("aria-hidden","true");
+    state.modalCtx=null;
   }
 
-  function applyModal() {
-    const ctx = state.modalCtx;
-    if (!ctx) return;
-    const { stone, action } = ctx;
-    const st = state.stones[stone];
+  function applyModal(){
+    const ctx=state.modalCtx;
+    if(!ctx) return;
 
-    const roll = Number(rollInput?.value || NaN);
-    if (!Number.isFinite(roll)) {
-      if (modalFoot) modalFoot.textContent = "Enter a numeric roll result.";
+    const stone=ctx.stone;
+    const action=ctx.action;
+    const st=state.stones[stone];
+
+    const roll = Number(rollInput.value);
+    if(!Number.isFinite(roll)){
+      modalFoot.textContent = "Enter a numeric roll result.";
       return;
     }
 
-    // Evaluate
-    if (stone === "weight") {
-      const dc = 12 + st.stress;
-      const usedAdv = (advSelect?.value === "yes");
-      if (roll >= dc) {
-        addProgress("weight", 1);
+    if(stone==="weight"){
+      const dc=12+st.stress;
+      const usedAdv = (advSelect.value==="yes");
+      if(roll>=dc){
+        addProgress("weight",1);
         toastMsg("Weight: Success (+Progress)");
       } else {
-        // Fail by 5+ => +Stress, else nothing
-        const failBy = dc - roll;
-        if (failBy >= 5) addStress("weight", 1);
-        if (usedAdv) addStress("weight", 1); // advantage risk
-        toastMsg("Weight: Failure");
+        addStress("weight",1);
+        if(usedAdv) addStress("weight",1);
+        toastMsg("Weight: Failure (+Stress)");
       }
     }
 
-    if (stone === "memory") {
-      const baseTarget = state.memoryTargetByRound(state.round);
-      const adjust = action === "assist" ? Number(memoryAdjust?.value || 0) : 0;
-      const target = clamp(baseTarget + adjust, 2, 12);
-      const diff = Math.abs(roll - target);
-      if (diff === 0) {
-        addProgress("memory", 1);
-        removeStress("memory", 1);
-        toastMsg("Memory: Exact match (+Progress, -Stress)");
-      } else if (diff === 1) {
-        addProgress("memory", 1);
-        toastMsg("Memory: Close match (+Progress)");
+    if(stone==="memory"){
+      const base = memoryTargetByRound(state.round);
+      const adj = (action==="assist") ? Number(memoryAdjust.value || 0) : 0;
+      const target = clamp(base+adj, 2, 12);
+      const diff = Math.abs(roll-target);
+      if(diff===0){
+        addProgress("memory",1);
+        removeStress("memory",1);
+        toastMsg("Memory: Exact (+Progress, -Stress)");
+      } else if(diff===1){
+        addProgress("memory",1);
+        toastMsg("Memory: Close (+Progress)");
       } else {
-        addStress("memory", 1);
+        addStress("memory",1);
         toastMsg("Memory: Miss (+Stress)");
       }
     }
 
-    if (stone === "silence") {
-      const slot = clamp(Number(slotInput?.value || 0), 0, 9);
+    if(stone==="silence"){
+      const slot = clamp(Number(slotInput.value || 0), 0, 9);
       const dc = 10 + slot + st.stress;
-      if (roll >= dc) {
-        addProgress("silence", 1);
+      if(roll>=dc){
+        addProgress("silence",1);
         toastMsg("Silence: Held (+Progress)");
       } else {
-        addStress("silence", 1);
+        addStress("silence",1);
         toastMsg("Silence: Backlash (+Stress)");
       }
     }
 
     closeModal();
-    renderAll();
   }
 
-  // ---------- Round control ----------
-  function nextRound() {
-    if (state.phase === "failed") return;
-    state.round = clamp(state.round + 1, 1, state.roundMax);
-    renderAll();
-    toastMsg(`Round ${state.round}`);
-    if (state.round === state.roundMax && state.phase === "running") {
-      toastMsg("Final round. Consider triggering Final Seal Test.");
-    }
-  }
-
-  function prevRound() {
-    state.round = clamp(state.round - 1, 1, state.roundMax);
-    renderAll();
-    toastMsg(`Round ${state.round}`);
-  }
-
-  // ---------- Final Seal Test ----------
-  state.finalResults = { weight: null, memory: null, silence: null };
-
-  function beginFinalTest() {
-    if (state.phase === "failed") return;
-    state.phase = "finaltest";
-    state.finalResults = { weight: null, memory: null, silence: null };
-    toastMsg("Final Seal Test: Weight → Memory → Silence");
-    renderAll();
-  }
-
-  function recordFinalResult(id, passFail) {
-    state.finalResults[id] = passFail;
-    const done = allFinalsSet();
-    if (done) {
-      // resolve in updateHeartwood()
-      updateHeartwood();
-      renderAll();
-      return;
-    }
-  }
-
-  function allFinalsSet() {
-    const r = state.finalResults;
-    return r.weight && r.memory && r.silence;
-  }
-
-  // ---------- Interruption flag ----------
-  function setInterruption(on) {
-    state.interruption = !!on;
-    document.body.classList.toggle("interruption", state.interruption);
-    toastMsg(on ? "Interruption!" : "Interruption cleared.");
-  }
-
-  // ---------- Reset ----------
-  function resetAll() {
-    state.round = 1;
-    state.eventIndex = 0;
-    state.phase = "running";
-    state.interruption = false;
-    state.finalResults = { weight: null, memory: null, silence: null };
-    Object.values(state.stones).forEach((s) => {
-      s.progress = 0;
-      s.stress = 0;
-      s.locked = false;
-    });
-    setInterruption(false);
-    renderAll();
-    toastMsg("Ritual reset.");
-  }
-
-  // ---------- DM Dock toggle ----------
-  function toggleDmDock() {
-    if (!dmDock) return;
-    const open = dmDock.getAttribute("aria-hidden") !== "false";
-    dmDock.setAttribute("aria-hidden", open ? "false" : "true");
+  // ---------- DM Dock ----------
+  function toggleDock(force){
+    const open = (typeof force==="boolean") ? force : !dmDock.classList.contains("open");
     dmDock.classList.toggle("open", open);
+    dmDock.setAttribute("aria-hidden", open ? "false" : "true");
   }
 
-  // ---------- Wiring ----------
-  function bind() {
+  // ---------- Utils ----------
+  function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  function resetAll(){
+    state.round=1;
+    state.eventIndex=0;
+    state.phase="running";
+    for(const k of Object.keys(state.stones)){
+      state.stones[k].progress=0;
+      state.stones[k].stress=0;
+      state.stones[k].locked=false;
+    }
+    logEl.innerHTML="";
+    toastMsg("Ritual reset.");
+    renderAll();
+  }
+
+  // ---------- Bind ----------
+  function bind(){
+    // Sound
+    btnSound.addEventListener("click", enableAudio);
+
+    // Main buttons
+    btnDock.addEventListener("click", ()=>toggleDock());
+    btnRollEvent.addEventListener("click", rollEvent);
+    btnApplyEvent.addEventListener("click", applyEvent);
+    btnPrevEvent.addEventListener("click", ()=>cycleEvent(-1));
+    btnNextEvent.addEventListener("click", ()=>cycleEvent(1));
+    btnNextRound.addEventListener("click", nextRound);
+
+    btnClearLog.addEventListener("click", ()=>{ logEl.innerHTML=""; toastMsg("Log cleared."); });
+
     // Stone buttons
-    document.querySelectorAll("[data-action][data-stone]").forEach((btn) => {
-      btn.addEventListener("click", () => {
+    document.querySelectorAll("[data-action][data-stone]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
         const stone = btn.getAttribute("data-stone");
         const action = btn.getAttribute("data-action");
-        if (!stone) return;
-        openModal({ stone, action: action === "help" ? "assist" : "attempt" });
+        openModal(stone, action);
       });
     });
 
     // Modal
-    btnCancel?.addEventListener("click", closeModal);
-    btnApply?.addEventListener("click", applyModal);
-    modal?.addEventListener("click", (e) => {
-      if (e.target === modal) closeModal();
-    });
+    btnCancel.addEventListener("click", closeModal);
+    btnApply.addEventListener("click", applyModal);
+    modal.addEventListener("click", (e)=>{ if(e.target===modal) closeModal(); });
 
-    // DM Dock
-    btnNextRound?.addEventListener("click", () => { nextRound(); });
-    btnPrevRound?.addEventListener("click", () => { prevRound(); });
-    btnAutoEvent?.addEventListener("click", () => { rollEvent(); });
+    // Dock
+    btnDockClose.addEventListener("click", ()=>toggleDock(false));
 
-    btnStressPlus?.addEventListener("click", () => addStress(stressStoneSel?.value || "weight", 1));
-    btnStressMinus?.addEventListener("click", () => removeStress(stressStoneSel?.value || "weight", 1));
+    btnPrevRound.addEventListener("click", prevRound);
+    btnNextRoundDock.addEventListener("click", nextRound);
+    btnRollEventDock.addEventListener("click", rollEvent);
 
-    btnProgPlus?.addEventListener("click", () => addProgress(progStoneSel?.value || "weight", 1));
-    btnProgMinus?.addEventListener("click", () => removeProgress(progStoneSel?.value || "weight", 1));
+    btnStressPlus.addEventListener("click", ()=>addStress(stressStoneSel.value,1));
+    btnStressMinus.addEventListener("click", ()=>removeStress(stressStoneSel.value,1));
 
-    btnInterrupt?.addEventListener("click", () => setInterruption(true));
-    btnClearInterrupt?.addEventListener("click", () => setInterruption(false));
+    btnProgPlus.addEventListener("click", ()=>addProgress(progStoneSel.value,1));
+    btnProgMinus.addEventListener("click", ()=>removeProgress(progStoneSel.value,1));
 
-    btnSealTest?.addEventListener("click", beginFinalTest);
-    btnReset?.addEventListener("click", resetAll);
+    btnReset.addEventListener("click", resetAll);
 
-    // Keyboard
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "`") {
-        e.preventDefault();
-        toggleDmDock();
+    // Keyboard shortcuts
+    window.addEventListener("keydown", (e)=>{
+      if(e.key==="`"){ e.preventDefault(); toggleDock(); return; }
+      if(modal.classList.contains("open")){
+        if(e.key==="Escape") closeModal();
+        if(e.key==="Enter") applyModal();
         return;
       }
-      if (modal?.classList.contains("open")) {
-        if (e.key === "Escape") closeModal();
-        if (e.key === "Enter") applyModal();
-        return;
-      }
-
-      if (e.key.toLowerCase() === "n") nextRound();
-      if (e.key.toLowerCase() === "p") prevRound();
-      if (e.key.toLowerCase() === "e") cycleEvent(1);
-      if (e.key === "1") openModal({ stone: "weight", action: "attempt" });
-      if (e.key === "2") openModal({ stone: "memory", action: "attempt" });
-      if (e.key === "3") openModal({ stone: "silence", action: "attempt" });
+      if(e.key.toLowerCase()==="n") nextRound();
+      if(e.key.toLowerCase()==="e") rollEvent();
     });
 
-    // Click event title to apply (nice for projector)
-    elEventTitle?.addEventListener("click", applyEvent);
-    elEventHint?.addEventListener("click", applyEvent);
-
-    // Initialize
+    // Init
     renderAll();
+    log("Ritual Begins", "The chamber breathes. The Heartwood listens.");
   }
 
   bind();
