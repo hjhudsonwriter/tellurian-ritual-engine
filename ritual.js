@@ -707,16 +707,18 @@
 
     btnReset.addEventListener("click", resetAll);
 
-    // Keyboard shortcuts
-    window.addEventListener("keydown", (e)=>{
-      if(e.key==="`"){ e.preventDefault(); toggleDock(); return; }
-      if(modal.classList.contains("open")){
-        if(e.key==="Escape") closeModal();
-        if(e.key==="Enter") applyModal();
+        // Keyboard shortcuts
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "`") { e.preventDefault(); toggleDock(); return; }
+
+      if (modal.classList.contains("open")) {
+        if (e.key === "Escape") closeModal();
+        if (e.key === "Enter") applyModal();
         return;
       }
-      if(e.key.toLowerCase()==="n") nextRound();
-      if(e.key.toLowerCase()==="e") rollEvent();
+
+      if (e.key.toLowerCase() === "n") nextRound();
+      if (e.key.toLowerCase() === "e") rollEvent();
     });
 
     // Init
@@ -724,5 +726,5 @@
     log("Ritual Begins", "The chamber breathes. The Heartwood listens.");
   }
 
-  bind();
+    bind();
 })();
