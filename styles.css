@@ -530,3 +530,140 @@ body::after{
   z-index: 3;
 }
 }
+/* ============================
+   FINAL SEAL OVERLAY (CINEMATIC)
+   ============================ */
+
+.sealOverlay{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:
+    radial-gradient(900px 600px at 50% 45%, rgba(110,240,166,.20), rgba(0,0,0,.92));
+  z-index: 200;
+  padding: 18px;
+}
+
+.sealOverlay.show{ display:flex; }
+
+.sealInner{
+  width: min(1200px, 94vw);
+  border-radius: 28px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(0,0,0,.72);
+  box-shadow: 0 50px 160px rgba(0,0,0,.88);
+  padding: 44px 34px 34px;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+}
+
+.sealInner::before{
+  content:"";
+  position:absolute;
+  inset:-30%;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(110,240,166,.12), transparent 55%),
+    radial-gradient(circle at 30% 60%, rgba(110,240,166,.08), transparent 60%),
+    radial-gradient(circle at 70% 40%, rgba(110,240,166,.08), transparent 60%);
+  filter: blur(18px);
+  opacity:.85;
+  animation: sealMist 4.2s ease-in-out infinite;
+  pointer-events:none;
+}
+
+@keyframes sealMist{
+  0%{ transform: translate(0,0) scale(1); opacity:.65; }
+  50%{ transform: translate(10px,-8px) scale(1.03); opacity:.95; }
+  100%{ transform: translate(0,0) scale(1); opacity:.65; }
+}
+
+.sealKicker{
+  font-family:"Cinzel", ui-serif, serif;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color: rgba(233,242,238,.70);
+  font-size: 12px;
+}
+
+.sealTitle{
+  font-family:"Cinzel", ui-serif, serif;
+  font-weight: 900;
+  font-size: 60px;
+  margin-top: 10px;
+  color: var(--accent);
+  text-shadow:
+    0 0 22px rgba(110,240,166,.35),
+    0 0 70px rgba(110,240,166,.18);
+}
+
+.sealSub{
+  margin: 16px auto 0;
+  max-width: 920px;
+  font-size: 22px;
+  line-height: 1.45;
+  color: rgba(233,242,238,.88);
+}
+
+.sealFoot{
+  margin-top: 18px;
+  font-size: 14px;
+  color: rgba(233,242,238,.70);
+  letter-spacing:.06em;
+}
+
+/* Sigil Animation */
+.sealSigilWrap{
+  width: min(520px, 72vw);
+  height: min(520px, 72vw);
+  margin: 26px auto 10px;
+  position:relative;
+  filter: drop-shadow(0 30px 90px rgba(0,0,0,.75));
+}
+
+.sealSigilRing{
+  position:absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 2px solid rgba(110,240,166,.20);
+  box-shadow: 0 0 60px rgba(110,240,166,.10) inset;
+  animation: sealSpin 6.8s linear infinite;
+}
+
+.sealSigilRing.ringA{
+  border-width: 2px;
+  opacity: .95;
+}
+
+.sealSigilRing.ringB{
+  inset: 34px;
+  border-width: 2px;
+  opacity: .65;
+  animation-duration: 4.9s;
+  animation-direction: reverse;
+}
+
+.sealSigilCore{
+  position:absolute;
+  inset: 120px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(110,240,166,.22), rgba(110,240,166,0) 62%);
+  border: 1px solid rgba(110,240,166,.18);
+  box-shadow:
+    0 0 90px rgba(110,240,166,.12),
+    0 0 40px rgba(110,240,166,.10) inset;
+  animation: sealPulse 2.8s ease-in-out infinite;
+}
+
+@keyframes sealSpin{
+  to{ transform: rotate(360deg); }
+}
+
+@keyframes sealPulse{
+  0%{ transform: scale(.98); opacity:.65; }
+  55%{ transform: scale(1.03); opacity:1; }
+  100%{ transform: scale(.98); opacity:.65; }
+}
