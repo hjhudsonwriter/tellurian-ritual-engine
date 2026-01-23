@@ -378,8 +378,7 @@
       banner.setAttribute("aria-hidden","true");
     }, ms);
   }
-
-    // ---------- Final Seal Overlay ----------
+      // ---------- Final Seal Overlay ----------
   function showSealOverlay(subText){
     if(!sealOverlay) return;
     if(sealSub && subText) sealSub.textContent = subText;
@@ -394,10 +393,8 @@
   }
 
   function finaleSlowdown(){
-    // Slow the CSS pulse
     document.documentElement.style.setProperty("--pulse", "4.6s");
 
-    // Fade heartbeat loop if enabled
     if(audio.enabled && audio.heartbeat){
       const start = audio.heartbeat.volume ?? 0.55;
       const steps = 20;
@@ -414,25 +411,20 @@
   }
 
   function triggerFinalSeal(){
-    // cinematic text (DM reads this)
     const sub = "Roots draw inward. The glyphs bite shut. The earth closes like a lid over a sleeping eye.";
 
-    // slow + fade heartbeat
     finaleSlowdown();
-
-    // sound hits (you already have both)
     playSfx("seal");
     playSfx("lock");
 
-    // show overlay
     showSealOverlay(sub);
 
-    // keep for 5.2 seconds, then hide
     setTimeout(()=>{
       hideSealOverlay();
       toastMsg("Final Seal complete.");
     }, 5200);
   }
+
 
   // ---------- State mutations ----------
   function setLockedIfComplete(id){
