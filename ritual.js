@@ -338,6 +338,7 @@
         triggerFinalSeal();
       }
   }
+  }
 
   function allLocked(){
     const s=state.stones;
