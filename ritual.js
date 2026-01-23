@@ -69,6 +69,10 @@
   const bannerTitle = $("bannerTitle");
   const bannerText = $("bannerText");
 
+    // Final Seal Overlay
+  const sealOverlay = $("sealOverlay");
+  const sealSub = $("sealSub");
+
   // ---------- Audio Engine (requires user click) ----------
   const audio = {
     enabled: false,
@@ -137,6 +141,7 @@
       memory:  { progress: 0, stress: 0, locked: false },
       silence: { progress: 0, stress: 0, locked: false },
     },
+    finalSealShown: false,
     modalCtx: null,
   };
 
@@ -318,14 +323,20 @@
       }
     }
 
-    // seal check (all locked)
+        // seal check (all locked)
     if(state.phase==="running" && allLocked()){
       state.phase="sealed";
-            showBanner("FINAL SEAL", "The Heartwood Sleeps", "All stones locked. The earth closes.", 4200);
-      playSfx("seal");
+
+      showBanner("FINAL SEAL", "The Heartwood Sleeps",
+        "All stones lock at once. The chamber exhales, and the earth begins to close.", 4200);
+
       log("Seal Set", "The roots recoil. The earth closes like an eyelid. The Heartwood sleeps.");
       toastMsg("SEALED: All stones locked.");
-    }
+
+      if(!state.finalSealShown){
+        state.finalSealShown = true;
+        triggerFinalSeal();
+      }
   }
 
   function allLocked(){
@@ -366,6 +377,61 @@
       banner.classList.remove("show");
       banner.setAttribute("aria-hidden","true");
     }, ms);
+  }
+
+    // ---------- Final Seal Overlay ----------
+  function showSealOverlay(subText){
+    if(!sealOverlay) return;
+    if(sealSub && subText) sealSub.textContent = subText;
+    sealOverlay.classList.add("show");
+    sealOverlay.setAttribute("aria-hidden","false");
+  }
+
+  function hideSealOverlay(){
+    if(!sealOverlay) return;
+    sealOverlay.classList.remove("show");
+    sealOverlay.setAttribute("aria-hidden","true");
+  }
+
+  function finaleSlowdown(){
+    // Slow the CSS pulse
+    document.documentElement.style.setProperty("--pulse", "4.6s");
+
+    // Fade heartbeat loop if enabled
+    if(audio.enabled && audio.heartbeat){
+      const start = audio.heartbeat.volume ?? 0.55;
+      const steps = 20;
+      let i = 0;
+      const t = setInterval(()=>{
+        i++;
+        audio.heartbeat.volume = Math.max(0, start * (1 - i/steps));
+        if(i >= steps){
+          audio.heartbeat.pause?.();
+          clearInterval(t);
+        }
+      }, 120);
+    }
+  }
+
+  function triggerFinalSeal(){
+    // cinematic text (DM reads this)
+    const sub = "Roots draw inward. The glyphs bite shut. The earth closes like a lid over a sleeping eye.";
+
+    // slow + fade heartbeat
+    finaleSlowdown();
+
+    // sound hits (you already have both)
+    playSfx("seal");
+    playSfx("lock");
+
+    // show overlay
+    showSealOverlay(sub);
+
+    // keep for 5.2 seconds, then hide
+    setTimeout(()=>{
+      hideSealOverlay();
+      toastMsg("Final Seal complete.");
+    }, 5200);
   }
 
   // ---------- State mutations ----------
@@ -447,7 +513,6 @@
     if(allLocked()){
       // Force a clear finale moment even if it already sealed earlier
       state.phase = "sealed";
-      playSfx("seal");
       log("Final Seal", "The last glyph falls quiet. The roots recoil. The earth closes like an eyelid. The Heartwood sleeps.");
       toastMsg("RITUAL COMPLETE: The Heartwood is sealed.");
     } else {
