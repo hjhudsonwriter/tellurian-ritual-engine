@@ -165,6 +165,121 @@ audio.sfx.seal.volume     = 0.50;
     audio.heartbeat.playbackRate = r;
   }
 
+    // ---------- Wyvern Emergency Cinematic ----------
+  function wyvernVideoUrl(){
+    // If you already have a base-path helper in this file, use it.
+    // Common name in your projects: withBase()
+    try {
+      if (typeof withBase === "function") return withBase("assets/wyvern_emergency.mp4");
+    } catch(e){}
+    // Fallback: plain relative path
+    return "assets/wyvern_emergency.mp4";
+  }
+
+  function playWyvernEmergencyVideo(){
+    // Prevent double-playing if Wyvern spawns more than once
+    if(state?.flags?.wyvernCinematicPlayed) return;
+    state.flags = state.flags || {};
+    state.flags.wyvernCinematicPlayed = true;
+
+    // Build overlay
+    const overlay = document.createElement("div");
+    overlay.id = "wyvernCinematicOverlay";
+    overlay.setAttribute("role","dialog");
+    overlay.setAttribute("aria-label","Wyvern Emergency");
+
+    const vid = document.createElement("video");
+    vid.id = "wyvernCinematicVideo";
+    vid.src = wyvernVideoUrl();
+    vid.playsInline = true;
+    vid.preload = "auto";
+    vid.controls = false;
+
+    // Try to play with sound (may be blocked until user gesture)
+    vid.muted = false;
+    vid.volume = 1;
+
+    const hint = document.createElement("div");
+    hint.id = "wyvernCinematicHint";
+    hint.textContent = "CLICK TO PLAY";
+
+    overlay.appendChild(vid);
+    overlay.appendChild(hint);
+    document.body.appendChild(overlay);
+
+    // Inject CSS once (no need to touch styles.css)
+    if(!document.getElementById("wyvernCinematicStyles")){
+      const css = document.createElement("style");
+      css.id = "wyvernCinematicStyles";
+      css.textContent = `
+        #wyvernCinematicOverlay{
+          position: fixed;
+          inset: 0;
+          z-index: 99999;
+          background: #000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        #wyvernCinematicVideo{
+          width: 100vw;
+          height: 100vh;
+          object-fit: cover;
+          background: #000;
+        }
+        #wyvernCinematicHint{
+          position: absolute;
+          bottom: 24px;
+          left: 50%;
+          transform: translateX(-50%);
+          padding: 10px 14px;
+          border-radius: 10px;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          font-size: 12px;
+          background: rgba(0,0,0,0.55);
+          color: #fff;
+          border: 1px solid rgba(255,255,255,0.35);
+          opacity: 0;
+          pointer-events: none;
+        }
+        #wyvernCinematicOverlay.needsClick #wyvernCinematicHint{
+          opacity: 1;
+        }
+      `;
+      document.head.appendChild(css);
+    }
+
+    function cleanup(){
+      try { vid.pause(); } catch(e){}
+      overlay.remove();
+    }
+
+    // Remove overlay when finished
+    vid.addEventListener("ended", cleanup);
+
+    // Also allow click to skip
+    overlay.addEventListener("click", cleanup);
+
+    // Attempt autoplay
+    const playAttempt = vid.play();
+    if(playAttempt && typeof playAttempt.catch === "function"){
+      playAttempt.catch(() => {
+        // Autoplay with sound blocked: require user click to start
+        overlay.classList.add("needsClick");
+        const unlock = () => {
+          overlay.classList.remove("needsClick");
+          // On click, try again (this counts as a user gesture)
+          vid.play().catch(()=>{});
+          overlay.removeEventListener("click", unlock);
+          // Note: overlay click is also "skip"; but unlock happens first here
+        };
+        // First click should start playback, second click can skip if they want
+        overlay.addEventListener("click", unlock, { once: true });
+      });
+    }
+  }
+
   // ---------- State ----------
   const state = {
     round: 1,
@@ -566,6 +681,8 @@ function spawnThreat(type){
 
   const base = THREATS[type];
   state.threat = JSON.parse(JSON.stringify(base)); // deep copy
+
+      if(id === "wyvern") playWyvernEmergencyVideo();
 
   showBanner(
     "COMBAT INTRUSION",
