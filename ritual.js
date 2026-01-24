@@ -152,9 +152,17 @@ audio.sfx.seal.volume     = 0.50;
     } catch {}
   }
 
-  function setHeartbeatRate(rate){
+    function setHeartbeatRate(rate){
     if (!audio.enabled || !audio.heartbeat) return;
-    audio.heartbeat.playbackRate = clamp(rate, 0.75, 1.45);
+
+    // Sanitize: never allow NaN/Infinity into playbackRate
+    let r = Number(rate);
+    if(!Number.isFinite(r)) r = 1.0;
+
+    r = clamp(r, 0.75, 1.45);
+    if(!Number.isFinite(r)) r = 1.0;
+
+    audio.heartbeat.playbackRate = r;
   }
 
   // ---------- State ----------
@@ -423,30 +431,47 @@ const THREATS = {
         triggerFinalSeal();
       }
   }
-        // ---------- Combat Triggers ----------
-    if(!state.threat && state.phase==="running"){
+                // ---------- Combat Triggers ----------
 
-      // Trigger A: Stress ≥ 6 (50%)
-      if(totalStress() >= 6 && Math.random() < 0.5){
-        spawnThreat("husk");
-      }
+        // Emergency Wyvern check MUST run before Husk/Buckbear checks
+        if(state.phase === "running"){
+          const wyvernConditions = [
+            totalStress() >= 9,
+            Object.values(state.stones).filter(s=>s.stress>=4).length >= 1,
+            state.round >= 7 && lockedCount() === 0
+          ];
 
-      // Trigger C: Round 6+, no locks
-      if(state.round >= 6 && lockedCount() === 0){
-        spawnThreat("buckbear");
-      }
+          const wyvernReady = (wyvernConditions.filter(Boolean).length >= 2);
 
-      // Emergency Wyvern
-      const wyvernConditions = [
-        totalStress() >= 9,
-        Object.values(state.stones).filter(s=>s.stress>=4).length >= 1,
-        state.round >= 7 && lockedCount() === 0
-      ];
+          if(wyvernReady){
+            // If no current threat: spawn Wyvern immediately (priority)
+            if(!state.threat){
+              spawnThreat("wyvern");
+            }
+            // If Husk is active: Wyvern may REPLACE it
+            else if(state.threat && state.threat.id === "husk"){
+              log("Threat Escalates", "The Husk is smothered by root and stone as something vastly larger takes shape.");
+              state.threat = null;
+              hideThreat();
+              spawnThreat("wyvern");
+            }
+            // If Buckbear (or anything else) is active: do nothing (NO replacement)
+          }
+        }
 
-      if(wyvernConditions.filter(Boolean).length >= 2){
-        spawnThreat("wyvern");
-      }
-    }
+        // Normal triggers only run if we still have no active threat
+        if(!state.threat && state.phase==="running"){
+
+          // Trigger A: Stress ≥ 6 (50%)
+          if(totalStress() >= 6 && Math.random() < 0.5){
+            spawnThreat("husk");
+          }
+
+          // Trigger C: Round 6+, no locks
+          if(state.round >= 6 && lockedCount() === 0){
+            spawnThreat("buckbear");
+          }
+        }
   }
 
   function allLocked(){
