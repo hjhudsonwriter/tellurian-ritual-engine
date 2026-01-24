@@ -683,3 +683,64 @@ body::after{
   55%{ transform: scale(1.03); opacity:1; }
   100%{ transform: scale(.98); opacity:.65; }
 }
+
+/* ============================
+   THREAT PANEL
+   ============================ */
+
+.threatPanel{
+  position:absolute;
+  top:20px;
+  right:20px;
+  width:320px;
+  padding:16px;
+  border-radius:18px;
+  background: rgba(0,0,0,.75);
+  border:1px solid rgba(255,255,255,.18);
+  box-shadow: 0 24px 70px rgba(0,0,0,.85);
+  z-index:150;
+  animation: threatRise .4s ease;
+}
+
+.threatPanel.hidden{ display:none; }
+
+.threatName{
+  font-family:"Cinzel", serif;
+  font-size:20px;
+  font-weight:900;
+  margin-bottom:10px;
+  color: var(--danger);
+}
+
+.threatBar{
+  width:100%;
+  height:12px;
+  background: rgba(255,255,255,.08);
+  border-radius:999px;
+  overflow:hidden;
+  margin-bottom:10px;
+}
+
+.threatHP{
+  height:100%;
+  width:100%;
+  background: linear-gradient(90deg, #ff5d6c, #ffcc66);
+  transition: width .3s ease;
+}
+
+.threatHint{
+  font-size:13px;
+  color: rgba(233,242,238,.85);
+  margin-bottom:12px;
+}
+
+.threatActions{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+}
+
+@keyframes threatRise{
+  from{ transform: translateY(10px); opacity:0 }
+  to{ transform: translateY(0); opacity:1 }
+}
