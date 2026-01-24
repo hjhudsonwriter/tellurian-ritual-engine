@@ -51,6 +51,22 @@ body{
   overflow:hidden;
 }
 
+/* ---------- Video Background ---------- */
+#bgVideo{
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+
+  z-index: -5;
+
+  opacity: 0.35;
+  filter: blur(2px) brightness(0.6) saturate(1.2);
+
+  pointer-events: none;
+}
+
 /* Subtle “stone grain” noise using layered gradients (no image needed) */
 body::before{
   content:"";
