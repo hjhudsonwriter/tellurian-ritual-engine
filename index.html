@@ -60,6 +60,21 @@
   <!-- RITUAL ARENA -->
   <section class="arena" aria-label="Ritual Arena">
 
+    <div id="threatPanel" class="threatPanel hidden">
+  <div class="threatName" id="threatName"></div>
+
+  <div class="threatBar">
+    <div class="threatHP" id="threatHP"></div>
+  </div>
+
+  <div class="threatHint" id="threatHint"></div>
+
+  <div class="threatActions">
+    <button class="btn btn--danger" onclick="damageThreat(15)">Strike Threat (15)</button>
+    <button class="btn btn--ghost" onclick="damageThreat(30)">Heavy Blow (30)</button>
+  </div>
+</div>
+
     <!-- Center Heartwood -->
     <div class="arenaCenter">
       <div class="core core--arena">
