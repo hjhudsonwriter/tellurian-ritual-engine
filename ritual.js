@@ -148,12 +148,63 @@ audio.sfx.seal.volume     = 0.50;
       silence: { progress: 0, stress: 0, locked: false },
     },
     finalSealShown: false,
+        threat: null, // active combat threat or null
     modalCtx: null,
   };
 
   function memoryTargetByRound(r){
     return (r <= 2) ? 6 : (r <= 5) ? 7 : 8;
   }
+
+  function totalStress(){
+  const s = state.stones;
+  return s.weight.stress + s.memory.stress + s.silence.stress;
+}
+
+function lockedCount(){
+  const s = state.stones;
+  return [s.weight.locked, s.memory.locked, s.silence.locked].filter(Boolean).length;
+}
+
+function hasThreat(){
+  return !!state.threat;
+}
+
+  // ---------- Threat Templates ----------
+const THREATS = {
+  husk: {
+    id: "husk",
+    name: "Rootbound Husk",
+    tier: 1,
+    maxHP: 35,
+    hp: 35,
+    damagePerRound: 6,
+    consequence: "If ignored, +1 Stress to a random stone.",
+    narrate: "The dead stir. Roots haul corpses upright, their limbs moving with borrowed intent."
+  },
+
+  buckbear: {
+    id: "buckbear",
+    name: "Rootbound Buckbear",
+    tier: 2,
+    maxHP: 55,
+    hp: 55,
+    damagePerRound: 10,
+    consequence: "If ignored, +1 Stress to ALL stones.",
+    narrate: "A massive, root-choked form lurches free. Antlers crack stone as it roars without lungs."
+  },
+
+  wyvern: {
+    id: "wyvern",
+    name: "Rootbound Wyvern",
+    tier: 3,
+    maxHP: 120,
+    hp: 120,
+    damagePerRound: 16,
+    consequence: "If ignored, ritual collapses next round.",
+    narrate: "Root, soil, and stone knit together into a colossal wyvern. The Heartwood’s final refusal takes shape."
+  }
+};
 
   // ---------- Events ----------
   const events = [
@@ -344,6 +395,30 @@ audio.sfx.seal.volume     = 0.50;
         triggerFinalSeal();
       }
   }
+        // ---------- Combat Triggers ----------
+    if(!state.threat && state.phase==="running"){
+
+      // Trigger A: Stress ≥ 6 (50%)
+      if(totalStress() >= 6 && Math.random() < 0.5){
+        spawnThreat("husk");
+      }
+
+      // Trigger C: Round 6+, no locks
+      if(state.round >= 6 && lockedCount() === 0){
+        spawnThreat("buckbear");
+      }
+
+      // Emergency Wyvern
+      const wyvernConditions = [
+        totalStress() >= 9,
+        Object.values(state.stones).filter(s=>s.stress>=4).length >= 1,
+        state.round >= 7 && lockedCount() === 0
+      ];
+
+      if(wyvernConditions.filter(Boolean).length >= 2){
+        spawnThreat("wyvern");
+      }
+    }
   }
 
   function allLocked(){
@@ -432,6 +507,52 @@ audio.sfx.seal.volume     = 0.50;
     }, 5200);
   }
 
+  // ---------- Threat System ----------
+function spawnThreat(type){
+  if(state.threat) return;
+
+  const base = THREATS[type];
+  state.threat = JSON.parse(JSON.stringify(base)); // deep copy
+
+  showBanner(
+    "COMBAT INTRUSION",
+    base.name,
+    base.narrate,
+    4200
+  );
+
+  log("Threat Emerges", `${base.name} enters the chamber.`);
+  playSfx("interrupt");
+
+  renderThreat();
+}
+
+function damageThreat(amount){
+  if(!state.threat) return;
+  state.threat.hp = clamp(state.threat.hp - amount, 0, state.threat.maxHP);
+
+  if(state.threat.hp <= 0){
+    resolveThreat();
+  }
+
+  renderThreat();
+}
+
+function resolveThreat(){
+  const t = state.threat;
+  log("Threat Defeated", `${t.name} is destroyed.`);
+
+  // Emergency payoff
+  if(t.id === "wyvern"){
+    ["weight","memory","silence"].forEach(id=>{
+      removeStress(id,1);
+      addProgress(id,2);
+    });
+  }
+
+  state.threat = null;
+  hideThreat();
+}
 
   // ---------- State mutations ----------
   function setLockedIfComplete(id){
@@ -524,7 +645,28 @@ audio.sfx.seal.volume     = 0.50;
     return;
   }
 
-  // Normal advance
+    // Threat acts if alive
+  if(state.threat){
+    const t = state.threat;
+    log("Threat Acts", `${t.name} lashes out. ${t.consequence}`);
+
+    if(t.id === "wyvern"){
+      state.phase = "failed";
+      showBanner("RITUAL SHATTERS", "The Wyvern Breaks the Binding", "The Heartwood refuses the seal.", 5200);
+      return;
+    }
+
+    if(t.tier === 1){
+      addStress(randomStone(),1);
+    } else if(t.tier === 2){
+      ["weight","memory","silence"].forEach(id=>addStress(id,1));
+    }
+  }
+    function randomStone(){
+  const ids = ["weight","memory","silence"];
+  return ids[Math.floor(Math.random()*ids.length)];
+}
+    // Normal advance
   state.round = clamp(state.round+1, 1, state.roundMax);
   log("Round Advances", "The chamber shifts. Roots redraw their lines across the stone.");
   renderAll();
