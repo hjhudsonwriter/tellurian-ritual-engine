@@ -191,6 +191,11 @@ function hasThreat(){
   return !!state.threat;
 }
 
+  function randomStone(){
+  const ids = ["weight","memory","silence"];
+  return ids[Math.floor(Math.random()*ids.length)];
+}
+
   // ---------- Threat Templates ----------
 const THREATS = {
   husk: {
@@ -354,11 +359,12 @@ const THREATS = {
     renderMemoryTarget();
     renderStone("weight"); renderStone("memory"); renderStone("silence");
     updatePulse();
+    renderThreat();
   }
 
   function updatePulse(){
     const s=state.stones;
-    const totalStress = s.weight.stress + s.memory.stress + s.silence.stress;
+    const stressTotal = totalStress();
     const locks = [s.weight.locked, s.memory.locked, s.silence.locked].filter(Boolean).length;
 
     // heartbeat speed + CSS pulse
@@ -370,16 +376,17 @@ const THREATS = {
 
     // glow shifts slightly with stress
     let glow="rgba(110,240,166,0.95)";
-    if(totalStress>=7) glow="rgba(255,204,102,0.95)";
-    if(totalStress>=10) glow="rgba(255,93,108,0.95)";
+    if(stressTotal>=7) glow="rgba(255,204,102,0.95)";
+    if(stressTotal>=10) glow="rgba(255,93,108,0.95)";
+
     document.documentElement.style.setProperty("--glow", glow);
 
     const label =
       state.phase==="sealed" ? "Dormant" :
       state.phase==="failed" ? "Racing" :
-      totalStress<=2 ? "Steady" :
-      totalStress<=6 ? "Strained" :
-      totalStress<=9 ? "Wild" : "Critical";
+      stressTotal<=2 ? "Steady" :
+      stressTotal<=6 ? "Strained" :
+      stressTotal<=9 ? "Wild" : "Critical";
 
     elPulseLabel.textContent = label;
 
@@ -683,10 +690,7 @@ function resolveThreat(){
       ["weight","memory","silence"].forEach(id=>addStress(id,1));
     }
   }
-    function randomStone(){
-  const ids = ["weight","memory","silence"];
-  return ids[Math.floor(Math.random()*ids.length)];
-}
+    
     // Normal advance
   state.round = clamp(state.round+1, 1, state.roundMax);
   log("Round Advances", "The chamber shifts. Roots redraw their lines across the stone.");
@@ -895,6 +899,10 @@ function resolveThreat(){
     renderAll();
     log("Ritual Begins", "The chamber breathes. The Heartwood listens.");
   }
+
+  // Expose for HTML onclick buttons (Edge safe)
+window.damageThreat = damageThreat;
+window.spawnThreat = spawnThreat;
 
     bind();
 })();
