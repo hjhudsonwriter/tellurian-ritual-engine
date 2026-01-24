@@ -62,6 +62,27 @@
   const btnReset = $("btnReset");
 
   const toast = $("toast");
+  const threatPanel = $("threatPanel");
+  const threatName = $("threatName");
+  const threatHP = $("threatHP");
+  const threatHint = $("threatHint");
+
+  function renderThreat(){
+  if(!state.threat){
+    hideThreat();
+    return;
+  }
+  const t = state.threat;
+  threatPanel.classList.remove("hidden");
+  threatName.textContent = t.name;
+  threatHint.textContent = t.consequence;
+  threatHP.style.width = `${(t.hp / t.maxHP) * 100}%`;
+}
+
+function hideThreat(){
+  if(threatPanel) threatPanel.classList.add("hidden");
+}
+
 
     // Banner (cinematic popup)
   const banner = $("banner");
