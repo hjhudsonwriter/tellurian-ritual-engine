@@ -178,8 +178,8 @@ audio.sfx.seal.volume     = 0.50;
   }
 
     // ---------- Wyvern Emergency Cinematic ----------
-    function wyvernVideoUrl(){
-    return withBase("assets/wyvern_emergency.mp4");
+      function wyvernVideoUrl(){
+    return withBase("assets/video/wyvern_emergency.mp4");
   }
 
   function playWyvernEmergencyVideo(){
