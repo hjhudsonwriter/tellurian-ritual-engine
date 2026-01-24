@@ -3,6 +3,18 @@
 
   const $ = (id) => document.getElementById(id);
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+    // ---------- GitHub Pages base-path helper ----------
+  const BASE = (() => {
+    const parts = location.pathname.split("/").filter(Boolean);
+    return parts.length ? `/${parts[0]}/` : "/";
+  })();
+
+  function withBase(url){
+    if(!url) return url;
+    if(url.startsWith("http") || url.startsWith("data:") || url.startsWith("blob:")) return url;
+    if(url.startsWith("/")) return url; // already absolute
+    return BASE + url.replace(/^\.?\//, "");
+  }
 
   // ---------- Elements ----------
   const elRoundNow = $("roundNow");
@@ -166,14 +178,8 @@ audio.sfx.seal.volume     = 0.50;
   }
 
     // ---------- Wyvern Emergency Cinematic ----------
-  function wyvernVideoUrl(){
-    // If you already have a base-path helper in this file, use it.
-    // Common name in your projects: withBase()
-    try {
-      if (typeof withBase === "function") return withBase("assets/wyvern_emergency.mp4");
-    } catch(e){}
-    // Fallback: plain relative path
-    return "assets/wyvern_emergency.mp4";
+    function wyvernVideoUrl(){
+    return withBase("assets/wyvern_emergency.mp4");
   }
 
   function playWyvernEmergencyVideo(){
