@@ -376,10 +376,10 @@ const THREATS = {
     const locks = [s.weight.locked, s.memory.locked, s.silence.locked].filter(Boolean).length;
 
     // heartbeat speed + CSS pulse
-    const speed = clamp(2.6 - totalStress*0.18 + locks*0.20, 1.2, 3.2);
+        const speed = clamp(2.6 - stressTotal*0.18 + locks*0.20, 1.2, 3.2);
     document.documentElement.style.setProperty("--pulse", `${speed}s`);
 
-    const hbRate = clamp(1.0 + totalStress*0.05 - locks*0.03, 0.85, 1.35);
+    const hbRate = clamp(1.0 + stressTotal*0.05 - locks*0.03, 0.85, 1.35);
     setHeartbeatRate(hbRate);
 
     // glow shifts slightly with stress
