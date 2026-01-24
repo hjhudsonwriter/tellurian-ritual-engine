@@ -258,11 +258,15 @@ audio.sfx.seal.volume     = 0.50;
     // Remove overlay when finished
     vid.addEventListener("ended", cleanup);
 
-    // Also allow click to skip
-    overlay.addEventListener("click", cleanup);
+    // Allow click to skip ONLY after video actually starts playing
+    let canSkip = false;
+    overlay.addEventListener("click", () => {
+      if(canSkip) cleanup();
+    });
 
     // Attempt autoplay
     const playAttempt = vid.play();
+    vid.addEventListener("playing", () => { canSkip = true; }, { once: true });
     if(playAttempt && typeof playAttempt.catch === "function"){
       playAttempt.catch(() => {
         // Autoplay with sound blocked: require user click to start
@@ -557,6 +561,9 @@ const THREATS = {
           ];
 
           const wyvernReady = (wyvernConditions.filter(Boolean).length >= 2);
+                    if(totalStress() >= 9 && state.round >= 7){
+            log("Wyvern Check", `Stress>=9: ${wyvernConditions[0]} | Fracture: ${wyvernConditions[1]} | R7+NoLocks: ${wyvernConditions[2]} (locks=${lockedCount()})`);
+          }
 
           if(wyvernReady){
             // If no current threat: spawn Wyvern immediately (priority)
