@@ -682,7 +682,7 @@ function spawnThreat(type){
   const base = THREATS[type];
   state.threat = JSON.parse(JSON.stringify(base)); // deep copy
 
-      if(id === "wyvern") playWyvernEmergencyVideo();
+  if(type === "wyvern") playWyvernEmergencyVideo();
 
   showBanner(
     "COMBAT INTRUSION",
