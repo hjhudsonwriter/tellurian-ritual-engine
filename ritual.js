@@ -91,7 +91,7 @@
       // Heartbeat loop
       audio.heartbeat = new Audio(audioPath("heartbeat_loop.mp3"));
       audio.heartbeat.loop = true;
-      audio.heartbeat.volume = 0.55;
+      audio.heartbeat.volume = 0.80;
 
       // One-shots
       audio.sfx.progress = new Audio(audioPath("sfx_progress.mp3"));
@@ -99,6 +99,12 @@
       audio.sfx.lock = new Audio(audioPath("sfx_lock.mp3"));
       audio.sfx.interrupt = new Audio(audioPath("sfx_interrupt.mp3"));
       audio.sfx.seal = new Audio(audioPath("sfx_seal.mp3"));
+      // --- Balance levels (SFX quieter than the heartbeat) ---
+audio.sfx.progress.volume = 0.45;
+audio.sfx.stress.volume   = 0.45;
+audio.sfx.lock.volume     = 0.50;
+audio.sfx.interrupt.volume= 0.55;
+audio.sfx.seal.volume     = 0.60;
 
       audio.enabled = true;
       btnSound.textContent = "Sound Enabled";
