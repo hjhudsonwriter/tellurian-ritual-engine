@@ -540,7 +540,7 @@ const THREATS = {
     if(state.phase!=="failed"){
       if(s.weight.stress>=4 || s.memory.stress>=4 || s.silence.stress>=4){
         state.phase="failed";
-                showBanner("RITUAL COLLAPSE", "A Glyph Fractures", "Stress reached 4. The binding fails.", 4200);
+                showBanner("RITUAL COLLAPSE", "A Glyph Fractures", "Stress reached 4. The binding fails.", 4200, true);
         playSfx("interrupt");
         log("Glyph Fracture", "A stone screams as it cracks. The binding collapses.");
         toastMsg("FAILED: A stone fractured (Stress 4).");
@@ -634,19 +634,26 @@ const THREATS = {
     toast.__t=setTimeout(()=>toast.classList.remove("show"), 2200);
   }
 
-    function showBanner(kicker, title, text, ms=2600){
-    if(!banner) return;
-    bannerKicker.textContent = kicker || "";
-    bannerTitle.textContent = title || "";
-    bannerText.textContent = text || "";
-    banner.classList.add("show");
-    banner.setAttribute("aria-hidden","false");
-    clearTimeout(banner.__t);
-    banner.__t = setTimeout(()=>{
-      banner.classList.remove("show");
-      banner.setAttribute("aria-hidden","true");
-    }, ms);
-  }
+    function showBanner(kicker, title, text, ms=2600, isNegative=false){
+  if(!banner) return;
+
+  bannerKicker.textContent = kicker || "";
+  bannerTitle.textContent = title || "";
+  bannerText.textContent = text || "";
+
+  // Apply negative styling if needed
+  banner.classList.toggle("negative", !!isNegative);
+
+  banner.classList.add("show");
+  banner.setAttribute("aria-hidden","false");
+
+  clearTimeout(banner.__t);
+  banner.__t = setTimeout(()=>{
+    banner.classList.remove("show");
+    banner.classList.remove("negative");
+    banner.setAttribute("aria-hidden","true");
+  }, ms);
+}
       // ---------- Final Seal Overlay ----------
   function showSealOverlay(subText){
     if(!sealOverlay) return;
@@ -764,7 +771,7 @@ function resolveThreat(){
     if(opts.event && st.locked) return;
     st.stress = clamp(st.stress+n, 0, 4);
     playSfx("stress");
-        showBanner("STONE STRAIN", `${cap(id)}`, "+1 Stress", 2400);
+        showBanner("STONE STRAIN", `${cap(id)}`, "+1 Stress", 2400, true);
     renderAll();
   }
 
@@ -1082,11 +1089,13 @@ btnApply.textContent = isAssist ? "Set Assist" : "Apply";
     } else {
       addStress("silence", 1);
       showBanner(
-        "BACKWASH",
-        "Silence Frays",
-        `The dampening fails. DC ${dc} missed. The ward tears and the stone strains.`,
-        3200
-      );
+        showBanner(
+  "BACKWASH",
+  "Silence Frays",
+  `The dampening fails...`,
+  3200,
+  true
+);
       toastMsg("Silence: Failure (+Stress)");
     }
 
