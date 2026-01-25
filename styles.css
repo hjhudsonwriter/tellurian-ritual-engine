@@ -334,17 +334,27 @@ body::after{
 #disk_memory{background-image: var(--img-stone-memory)}
 #disk_silence{background-image: var(--img-stone-silence)}
 
-/* Cracks overlay */
+/* --- Crack overlay (stone stress visuals) --- */
+.stoneDisk,
+.stoneDisk--orbit{
+  position: relative;
+  overflow: hidden;
+}
+
 .cracks{
-  position:absolute;
-  inset:0;
-  z-index: 3;
-  background-repeat:no-repeat;
-  background-position:center;
+  position: absolute;
+  inset: -8%;
+  z-index: 5;
+  pointer-events: none;
+
+  background-repeat: no-repeat;
+  background-position: center;
   background-size: cover;
-  opacity:0;
-  transition: opacity .20s ease;
-  pointer-events:none;
+
+  opacity: 0;
+  transition: opacity 220ms ease, filter 220ms ease;
+
+  /* helps bright cracks read on dark disks */
   mix-blend-mode: screen;
 }
 
