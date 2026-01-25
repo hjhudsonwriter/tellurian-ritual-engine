@@ -458,9 +458,9 @@ const THREATS = {
   if (crackEl){
     let crackImg = "";
     if (!st.locked){
-      if (st.stress === 1) crackImg = "assets/img/cracks_1.png";
-      if (st.stress === 2) crackImg = "assets/img/cracks_2.png";
-      if (st.stress >= 3) crackImg = "assets/img/cracks_3.png";
+      if (st.stress === 1) crackImg = withBase("assets/img/cracks_1.png");
+      if (st.stress === 2) crackImg = withBase("assets/img/cracks_2.png");
+      if (st.stress >= 3) crackImg = withBase("assets/img/cracks_3.png");
     }
 
     crackEl.style.backgroundImage = crackImg ? `url("${crackImg}")` : "none";
@@ -914,17 +914,24 @@ btnApply.textContent = isAssist ? "Set Assist" : "Apply";
        Enter the <b>2d6 total</b> vs target <b>${t}</b>.<br>
        Exact: +Progress and -Stress. ±1: +Progress. Miss by 2+: +Stress.`;
   }
-} else if(stone==="silence"){
+} } else if(stone==="silence"){
+  const previewSlot = clamp(Number(slotInput.value || 0), 0, 9);
+  const previewDC = Math.max(8, 10 + st.stress - previewSlot);
+
   if(action==="assist"){
     modalBody.innerHTML =
-      `<b>Silence (Assist)</b>: Prepare the channel.<br>
-       Choose the <b>Slot Level</b> you expect to spend. No roll is entered here.<br>
-       Next Attempt: you enter Arcana/Religion vs <b>DC = 10 + Slot + Stress</b>.`;
+      `<b>Silence (Assist)</b>: Dampening Ward.<br>
+       Choose the <b>Slot</b> you will spend to smother the Heartwood’s magic.<br>
+       <b>No roll</b> is entered here. This just arms the next Attempt.<br><br>
+       Next Silence Attempt uses:<br>
+       <b>DC = 10 + Stress − Slot</b> (min DC 8).<br>
+       Current preview (with Slot ${previewSlot}): <b>DC ${previewDC}</b>.`;
   } else {
     modalBody.innerHTML =
       `<b>Silence (Attempt)</b>: Press the magic down.<br>
-       Enter Arcana/Religion result vs <b>DC = 10 + Slot + Stress</b>.<br>
-       Choose Slot Level (0 if none).`;
+       Enter Arcana/Religion result vs:<br>
+       <b>DC = 10 + Stress − Slot</b> (min DC 8).<br>
+       Choose Slot (0 if none).`;
   }
 }
 
@@ -940,131 +947,155 @@ btnApply.textContent = isAssist ? "Set Assist" : "Apply";
   }
 
   function applyModal(){
-    const ctx=state.modalCtx;
-    if(!ctx) return;
+  const ctx = state.modalCtx;
+  if(!ctx) return;
 
-    const stone=ctx.stone;
-    const action=ctx.action;
-    const st=state.stones[stone];
-    // --- Option A Assist: setup only, no roll required ---
-if(action === "assist"){
-  if(stone==="weight"){
-  const dc = 12 + st.stress;
+  const stone = ctx.stone;
+  const action = ctx.action;
+  const st = state.stones[stone];
 
-  const usedAdv = !!state.assistPending.weight; // armed by Assist
+  // -----------------------------
+  // OPTION A: ASSIST = "setup only"
+  // -----------------------------
+  if(action === "assist"){
 
-  if(roll >= dc){
-    addProgress("weight", 1);
-    toastMsg("Weight: Success (+Progress)");
-  } else {
-    addStress("weight", 1);
-    if(usedAdv) addStress("weight", 1); // extra stress if advantaged attempt still fails
-    toastMsg("Weight: Failure (+Stress)");
-  }
-
-  // clear assist after the attempt
-  state.assistPending.weight = false;
-}
-  if(stone==="memory"){
-  const base = memoryTargetByRound(state.round);
-
-  const adj = (state.assistPending.memory?.on) ? Number(state.assistPending.memory.adjust || 0) : 0;
-  const target = clamp(base + adj, 2, 12);
-
-  const diff = Math.abs(roll - target);
-
-  if(diff === 0){
-    addProgress("memory", 1);
-    removeStress("memory", 1);
-    toastMsg("Memory: Exact (+Progress, -Stress)");
-  } else if(diff === 1){
-    addProgress("memory", 1);
-    toastMsg("Memory: Close (+Progress)");
-  } else {
-    addStress("memory", 1);
-    toastMsg("Memory: Miss (+Stress)");
-  }
-
-  // clear assist after the attempt
-  state.assistPending.memory = { on:false, adjust:0 };
-}
-
-  if(stone==="silence"){
-  const preset = state.assistPending.silence?.on ? Number(state.assistPending.silence.slot || 0) : null;
-
-  // If assist armed, use the preset slot unless DM overwrote it in the field
-  const slotRaw = Number(slotInput.value || 0);
-  const slot = clamp((preset !== null) ? preset : slotRaw, 0, 9);
-
-  const dc = 10 + slot + st.stress;
-
-  if(roll >= dc){
-    addProgress("silence", 1);
-    toastMsg("Silence: Held (+Progress)");
-  } else {
-    addStress("silence", 1);
-    toastMsg("Silence: Backlash (+Stress)");
-  }
-
-  // clear assist after the attempt
-  state.assistPending.silence = { on:false, slot:0 };
-}
-
-  closeModal();
-  return;
-}
-
-    const roll = Number(rollInput.value);
-    if(!Number.isFinite(roll)){
-      modalFoot.textContent = "Enter a numeric roll result.";
-      return;
+    if(stone === "weight"){
+      state.assistPending.weight = true;
+      showBanner(
+        "ASSIST SET",
+        "Weight",
+        "A companion braces the chamber. Next Weight Attempt is rolled with advantage at the table (enter the final result here).",
+        3200
+      );
+      toastMsg("Weight Assist armed (advantage on next attempt).");
     }
 
-    if(stone==="weight"){
-      const dc=12+st.stress;
-      const usedAdv = (advSelect.value==="yes");
-      if(roll>=dc){
-        addProgress("weight",1);
-        toastMsg("Weight: Success (+Progress)");
-      } else {
-        addStress("weight",1);
-        if(usedAdv) addStress("weight",1);
-        toastMsg("Weight: Failure (+Stress)");
-      }
+    if(stone === "memory"){
+      const adj = Number(memoryAdjust.value || 0);
+      state.assistPending.memory = { on:true, adjust: adj };
+      const sign = adj > 0 ? `+${adj}` : `${adj}`;
+      showBanner(
+        "ASSIST SET",
+        "Memory",
+        `The rhythm is steadied. Next Memory Attempt target is adjusted by ${sign}.`,
+        3200
+      );
+      toastMsg("Memory Assist armed (target adjust).");
     }
 
-    if(stone==="memory"){
-      const base = memoryTargetByRound(state.round);
-      const adj = (action==="assist") ? Number(memoryAdjust.value || 0) : 0;
-      const target = clamp(base+adj, 2, 12);
-      const diff = Math.abs(roll-target);
-      if(diff===0){
-        addProgress("memory",1);
-        removeStress("memory",1);
-        toastMsg("Memory: Exact (+Progress, -Stress)");
-      } else if(diff===1){
-        addProgress("memory",1);
-        toastMsg("Memory: Close (+Progress)");
-      } else {
-        addStress("memory",1);
-        toastMsg("Memory: Miss (+Stress)");
-      }
-    }
-
-    if(stone==="silence"){
+    if(stone === "silence"){
       const slot = clamp(Number(slotInput.value || 0), 0, 9);
-      const dc = 10 + slot + st.stress;
-      if(roll>=dc){
-        addProgress("silence",1);
-        toastMsg("Silence: Held (+Progress)");
-      } else {
-        addStress("silence",1);
-        toastMsg("Silence: Backlash (+Stress)");
-      }
+      state.assistPending.silence = { on:true, slot };
+      showBanner(
+        "ASSIST SET",
+        "Silence",
+        `A dampening ward is prepared. Next Silence Attempt will reduce DC by Slot (${slot}).`,
+        3200
+      );
+      toastMsg("Silence Assist armed (slot dampening).");
     }
 
     closeModal();
+    return;
   }
+
+  // -----------------------------
+  // ATTEMPT: requires roll input
+  // -----------------------------
+  const roll = Number(rollInput.value);
+  if(!Number.isFinite(roll)){
+    modalFoot.textContent = "Enter a numeric roll result.";
+    return;
+  }
+
+  // WEIGHT ATTEMPT (uses advantage if armed, but you still enter final result)
+  if(stone === "weight"){
+    const dc = 12 + st.stress;
+    const usedAdv = !!state.assistPending.weight;
+
+    if(roll >= dc){
+      addProgress("weight", 1);
+      toastMsg("Weight: Success (+Progress)");
+    } else {
+      addStress("weight", 1);
+
+      // If they used advantage (from Assist) and STILL failed, add extra Stress
+      if(usedAdv) addStress("weight", 1);
+
+      toastMsg("Weight: Failure (+Stress)");
+    }
+
+    // Assist is consumed after the attempt resolves
+    state.assistPending.weight = false;
+  }
+
+  // MEMORY ATTEMPT (uses pending adjust if armed)
+  if(stone === "memory"){
+    const base = memoryTargetByRound(state.round);
+
+    const adj = (state.assistPending.memory?.on)
+      ? Number(state.assistPending.memory.adjust || 0)
+      : 0;
+
+    const target = clamp(base + adj, 2, 12);
+    const diff = Math.abs(roll - target);
+
+    if(diff === 0){
+      addProgress("memory", 1);
+      removeStress("memory", 1);
+      toastMsg("Memory: Exact (+Progress, -Stress)");
+    } else if(diff === 1){
+      addProgress("memory", 1);
+      toastMsg("Memory: Close (+Progress)");
+    } else {
+      addStress("memory", 1);
+      toastMsg("Memory: Miss (+Stress)");
+    }
+
+    // Assist is consumed after the attempt resolves
+    state.assistPending.memory = { on:false, adjust:0 };
+  }
+
+  // SILENCE ATTEMPT (NEW FORMULA: DC = 10 + Stress - Slot)
+  if(stone === "silence"){
+    const presetSlot = (state.assistPending.silence?.on)
+      ? Number(state.assistPending.silence.slot || 0)
+      : null;
+
+    // DM can still type a different slot in the field, but if assist is armed,
+    // we default to the preset unless they overwrite it.
+    const typedSlot = clamp(Number(slotInput.value || 0), 0, 9);
+    const slot = (presetSlot !== null) ? presetSlot : typedSlot;
+
+    // New DC: 10 + Stress - Slot (minimum 8 so it never becomes silly)
+    const dc = Math.max(8, 10 + st.stress - slot);
+
+    if(roll >= dc){
+      addProgress("silence", 1);
+      showBanner(
+        "SILENCE HOLDS",
+        "Magic Dampened",
+        `Slot spent to smother the echo. DC ${dc} met. The chamber quiets.`,
+        3200
+      );
+      toastMsg("Silence: Success (+Progress)");
+    } else {
+      addStress("silence", 1);
+      showBanner(
+        "BACKWASH",
+        "Silence Frays",
+        `The dampening fails. DC ${dc} missed. The ward tears and the stone strains.`,
+        3200
+      );
+      toastMsg("Silence: Failure (+Stress)");
+    }
+
+    // Assist is consumed after the attempt resolves
+    state.assistPending.silence = { on:false, slot:0 };
+  }
+
+  closeModal();
+}
 
   // ---------- DM Dock ----------
   function toggleDock(force){
