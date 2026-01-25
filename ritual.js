@@ -1089,7 +1089,6 @@ btnApply.textContent = isAssist ? "Set Assist" : "Apply";
     } else {
       addStress("silence", 1);
       showBanner(
-        showBanner(
   "BACKWASH",
   "Silence Frays",
   `The dampening fails...`,
