@@ -533,6 +533,15 @@ body::after{
     0 0 22px rgba(110,240,166,.35),
     0 0 60px rgba(110,240,166,.18);
 }
+/* Negative (Stress / Failure) banners */
+.banner.negative .bannerTitle{
+  color: var(--danger);
+  text-shadow: 0 0 28px rgba(255,93,108,.35);
+}
+
+.banner.negative .bannerText{
+  color: rgba(255,180,180,.95);
+}
 .bannerText{
   font-size: 22px;
   max-width: 900px;
