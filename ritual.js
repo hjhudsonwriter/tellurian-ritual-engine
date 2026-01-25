@@ -197,9 +197,11 @@ audio.sfx.seal.volume     = 0.50;
 
     const vid = document.createElement("video");
     vid.id = "wyvernCinematicVideo";
-    vid.src = wyvernVideoUrl();
+    const preload = document.getElementById("wyvernPreload");
+vid.src = preload ? preload.currentSrc || preload.src : wyvernVideoUrl();
     vid.playsInline = true;
     vid.preload = "auto";
+    vid.disablePictureInPicture = true;
     vid.controls = false;
 
     // Try to play with sound (may be blocked until user gesture)
