@@ -945,6 +945,7 @@ btnApply.textContent = isAssist ? "Set Assist" : "Apply";
 
     const stone=ctx.stone;
     const action=ctx.action;
+    const st=state.stones[stone];
     // --- Option A Assist: setup only, no roll required ---
 if(action === "assist"){
   if(stone==="weight"){
@@ -1012,7 +1013,6 @@ if(action === "assist"){
   closeModal();
   return;
 }
-    const st=state.stones[stone];
 
     const roll = Number(rollInput.value);
     if(!Number.isFinite(roll)){
