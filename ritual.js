@@ -914,7 +914,7 @@ btnApply.textContent = isAssist ? "Set Assist" : "Apply";
        Enter the <b>2d6 total</b> vs target <b>${t}</b>.<br>
        Exact: +Progress and -Stress. ±1: +Progress. Miss by 2+: +Stress.`;
   }
-} } else if(stone==="silence"){
+    } else if(stone==="silence"){
   const previewSlot = clamp(Number(slotInput.value || 0), 0, 9);
   const previewDC = Math.max(8, 10 + st.stress - previewSlot);
 
