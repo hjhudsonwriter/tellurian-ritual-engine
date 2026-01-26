@@ -180,7 +180,7 @@ audio.sfx.seal.volume     = 0.50;
 
     // ---------- Wyvern Emergency Cinematic ----------
       function wyvernVideoUrl(){
-    return withBase("assets/video/wyvern_emergency.mp4");
+    return withBase("assets/video/wyvern_emergency_optimized.mp4");
   }
 
   function playWyvernEmergencyVideo(){
@@ -215,6 +215,7 @@ vid.src = preload ? preload.currentSrc || preload.src : wyvernVideoUrl();
     overlay.appendChild(vid);
     overlay.appendChild(hint);
     document.body.appendChild(overlay);
+    overlay.style.opacity = "0"; // hide until ready
 
     // Inject CSS once (no need to touch styles.css)
     if(!document.getElementById("wyvernCinematicStyles")){
@@ -263,6 +264,10 @@ vid.src = preload ? preload.currentSrc || preload.src : wyvernVideoUrl();
       try { vid.pause(); } catch(e){}
       overlay.remove();
     }
+
+    vid.addEventListener("canplaythrough", () => {
+  overlay.style.opacity = "1";
+}, { once:true });
 
     // Remove overlay when finished
     vid.addEventListener("ended", cleanup);
