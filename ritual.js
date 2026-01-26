@@ -182,62 +182,105 @@ audio.sfx.seal.volume     = 0.50;
   }
 
   // ---------- Cinematics (iframe player) ----------
-function openCinematic(srcPath){
-  if(!cinematicOverlay || !cinematicFrame) return;
-
-  // Freeze the main page to give video max performance
-  document.body.classList.add("cinematicMode");
-
-  // Pause background video if you have one
-  const bg = document.getElementById("bgVideo");
-  try{ bg && bg.pause && bg.pause(); }catch{}
-
-  // Optional: soften the heartbeat while cinematic runs (prevents “audio pile-up”)
-  try{
-    if(audio && audio.enabled && audio.heartbeat){
-      audio.heartbeat.volume = 0.15;
+  // ---------- Cinematics (iframe player) ----------
+  function cinematicEls(){
+    const overlay = document.getElementById("cinematicOverlay");
+    const frame = document.getElementById("cinematicFrame");
+    if(!overlay || !frame){
+      const msg = `[CINEMATIC] Missing required DOM nodes: ` +
+        `${!overlay ? "#cinematicOverlay " : ""}${!frame ? "#cinematicFrame" : ""}`.trim();
+      console.warn(msg);
+      try{ toastMsg("CINEMATIC ERROR: overlay/frame missing (see console)."); }catch{}
+      return null;
     }
-  }catch{}
+    return { overlay, frame };
+  }
 
-  cinematicOverlay.classList.add("show");
-  cinematicOverlay.setAttribute("aria-hidden","false");
+  function openCinematic(srcPath){
+    const els = cinematicEls();
+    if(!els) return;
 
-  // Load the lightweight player page with a query string pointing to your mp4
-  const playerUrl = `cinematics/player.html?src=${encodeURIComponent(srcPath)}`;
-  cinematicFrame.src = playerUrl;
-}
+    const { overlay, frame } = els;
 
-function closeCinematic(){
-  if(!cinematicOverlay || !cinematicFrame) return;
-
-  cinematicOverlay.classList.remove("show");
-  cinematicOverlay.setAttribute("aria-hidden","true");
-
-  // Stop the iframe page completely
-  cinematicFrame.src = "about:blank";
-
-  // Unfreeze main UI
-  document.body.classList.remove("cinematicMode");
-
-  // Resume background video if present
-  const bg = document.getElementById("bgVideo");
-  try{ bg && bg.play && bg.play().catch(()=>{}); }catch{}
-
-  // Restore heartbeat volume
-  try{
-    if(audio && audio.enabled && audio.heartbeat){
-      audio.heartbeat.volume = 0.55;
+    // Guard: if already open, don't stack
+    if(overlay.classList.contains("show")){
+      console.warn("[CINEMATIC] openCinematic called while already open. Ignoring.");
+      return;
     }
-  }catch{}
-}
 
-// Listen for the cinematic page telling us it finished
-window.addEventListener("message", (ev)=>{
-  const data = ev && ev.data;
-  if(!data || data.type !== "cinematic_done") return;
-  closeCinematic();
-});
+    // Freeze the main page to give video max performance
+    document.body.classList.add("cinematicMode");
 
+    // Pause background video if you have one
+    const bg = document.getElementById("bgVideo");
+    try{ bg && bg.pause && bg.pause(); }catch{}
+
+    // Soften heartbeat while cinematic runs
+    try{
+      if(audio && audio.enabled && audio.heartbeat){
+        audio.heartbeat.volume = 0.15;
+      }
+    }catch{}
+
+    overlay.classList.add("show");
+    overlay.setAttribute("aria-hidden","false");
+
+    // IMPORTANT: load the lightweight player page with a query string pointing to your mp4
+    const playerUrl = `cinematics/player.html?src=${encodeURIComponent(srcPath)}`;
+    frame.src = playerUrl;
+
+    console.warn(`[CINEMATIC] Opening: ${srcPath}`);
+    try{ toastMsg(`Cinematic: ${srcPath.split("/").pop()}`); }catch{}
+  }
+
+  function closeCinematic(){
+    const els = cinematicEls();
+    if(!els) return;
+
+    const { overlay, frame } = els;
+
+    overlay.classList.remove("show");
+    overlay.setAttribute("aria-hidden","true");
+
+    // Stop the iframe page completely
+    frame.src = "about:blank";
+
+    // Unfreeze main UI
+    document.body.classList.remove("cinematicMode");
+
+    // Resume background video if present
+    const bg = document.getElementById("bgVideo");
+    try{ bg && bg.play && bg.play().catch(()=>{}); }catch{}
+
+    // Restore heartbeat volume
+    try{
+      if(audio && audio.enabled && audio.heartbeat){
+        audio.heartbeat.volume = 0.55;
+      }
+    }catch{}
+
+    console.warn("[CINEMATIC] Closed.");
+  }
+
+  // Listen for the cinematic page telling us it finished
+  window.addEventListener("message", (ev)=>{
+    const data = ev && ev.data;
+    if(!data || data.type !== "cinematic_done") return;
+
+    console.warn(`[CINEMATIC] Done message received. reason=${data.reason || "?"}`);
+
+    // Optional: if we queued the Final Seal overlay until after the cinematic, fire it now.
+    if(state && state.flags && state.flags.pendingFinalSeal){
+      state.flags.pendingFinalSeal = false;
+      // Keep the original seal overlay behavior, but only AFTER the cinematic ends
+      if(!state.finalSealShown){
+        state.finalSealShown = true;
+        triggerFinalSeal();
+      }
+    }
+
+    closeCinematic();
+  });
     // ---------- Wyvern Emergency Cinematic ----------
       function wyvernVideoUrl(){
     openCinematic("assets/video/wyvern_emergency.mp4");
@@ -642,11 +685,9 @@ if(state.phase==="running" && allLocked()){
     openCinematic("assets/video/ritual_success.mp4");
   }
 
-  // Keep your existing final seal overlay behaviour if you still want it
-  if(!state.finalSealShown){
-    state.finalSealShown = true;
-    triggerFinalSeal();
-  }
+    // Queue the Final Seal overlay until AFTER the cinematic finishes
+  state.flags = state.flags || {};
+  state.flags.pendingFinalSeal = true;
 }
                 // ---------- Combat Triggers ----------
 
@@ -917,11 +958,23 @@ function resolveThreat(){
       state.phase = "sealed";
       log("Final Seal", "The last glyph falls quiet. The roots recoil. The earth closes like an eyelid. The Heartwood sleeps.");
       toastMsg("RITUAL COMPLETE: The Heartwood is sealed.");
+            if(!state.successCinematicShown){
+        state.successCinematicShown = true;
+        openCinematic("assets/video/ritual_success.mp4");
+
+        // Queue the seal overlay until after the cinematic closes (prevents conflict)
+        state.flags = state.flags || {};
+        state.flags.pendingFinalSeal = true;
+      }
     } else {
       state.phase = "failed";
       playSfx("interrupt");
       log("Time Runs Out", "The lullaby falters. The chamber convulses. The binding collapses under its own strain.");
       toastMsg("RITUAL FAILED: Time ran out (not all stones locked).");
+            if(!state.failCinematicShown){
+        state.failCinematicShown = true;
+        openCinematic("assets/video/ritual_collapse.mp4");
+      }
     }
     renderAll();
     return;
@@ -932,9 +985,15 @@ function resolveThreat(){
     const t = state.threat;
     log("Threat Acts", `${t.name} lashes out. ${t.consequence}`);
 
-    if(t.id === "wyvern"){
+        if(t.id === "wyvern"){
       state.phase = "failed";
       showBanner("RITUAL SHATTERS", "The Wyvern Breaks the Binding", "The Heartwood refuses the seal.", 5200);
+
+      if(!state.failCinematicShown){
+        state.failCinematicShown = true;
+        openCinematic("assets/video/ritual_collapse.mp4");
+      }
+
       return;
     }
 
@@ -1271,8 +1330,13 @@ btnApply.textContent = isAssist ? "Set Assist" : "Apply";
         return;
       }
 
-      if (e.key.toLowerCase() === "n") nextRound();
+            if (e.key.toLowerCase() === "n") nextRound();
       if (e.key.toLowerCase() === "e") rollEvent();
+
+      // TEMP TEST: press P to force-play the success cinematic
+      if (e.key.toLowerCase() === "p") {
+        openCinematic("assets/video/ritual_success.mp4");
+      }
     });
 
     // Init
