@@ -181,107 +181,132 @@ audio.sfx.seal.volume     = 0.50;
     audio.heartbeat.playbackRate = r;
   }
 
-  // ---------- Cinematics (iframe player) ----------
-  // ---------- Cinematics (iframe player) ----------
-  function cinematicEls(){
-    const overlay = document.getElementById("cinematicOverlay");
-    const frame = document.getElementById("cinematicFrame");
-    if(!overlay || !frame){
-      const msg = `[CINEMATIC] Missing required DOM nodes: ` +
-        `${!overlay ? "#cinematicOverlay " : ""}${!frame ? "#cinematicFrame" : ""}`.trim();
-      console.warn(msg);
-      try{ toastMsg("CINEMATIC ERROR: overlay/frame missing (see console)."); }catch{}
+    // ---------- Cinematics (DIRECT VIDEO overlay; no iframe) ----------
+  function cinVideoEls(){
+    const overlay = document.getElementById("cinVideoOverlay");
+    const video   = document.getElementById("cinVideo");
+    const gate    = document.getElementById("cinGate");
+    const btn     = document.getElementById("cinGateBtn");
+
+    if(!overlay || !video){
+      console.warn(`[CINEMATIC] Missing #cinVideoOverlay or #cinVideo`);
+      try{ toastMsg("CINEMATIC ERROR: Missing cinVideoOverlay/cinVideo (see console)."); }catch{}
       return null;
     }
-    return { overlay, frame };
+    return { overlay, video, gate, btn };
   }
 
   function openCinematic(srcPath){
-    const els = cinematicEls();
+    const els = cinVideoEls();
     if(!els) return;
 
-    const { overlay, frame } = els;
+    const { overlay, video, gate, btn } = els;
 
-    // Guard: if already open, don't stack
+    // Prevent stacking
     if(overlay.classList.contains("show")){
-      console.warn("[CINEMATIC] openCinematic called while already open. Ignoring.");
+      console.warn("[CINEMATIC] Already open. Ignoring.");
       return;
     }
 
-    // Freeze the main page to give video max performance
+    // IMPORTANT: resolve to correct GitHub Pages base
+    const resolved = withBase(srcPath);
+
+    console.warn(`[CINEMATIC] Opening (direct): ${resolved}`);
+    try{ toastMsg(`Cinematic: ${srcPath.split("/").pop()}`); }catch{}
+
     document.body.classList.add("cinematicMode");
 
-    // Pause background video if you have one
+    // Pause bg video
     const bg = document.getElementById("bgVideo");
     try{ bg && bg.pause && bg.pause(); }catch{}
 
-    // Soften heartbeat while cinematic runs
-    try{
-      if(audio && audio.enabled && audio.heartbeat){
-        audio.heartbeat.volume = 0.15;
-      }
-    }catch{}
+    // soften heartbeat
+    try{ if(audio?.enabled && audio.heartbeat) audio.heartbeat.volume = 0.15; }catch{}
 
     overlay.classList.add("show");
     overlay.setAttribute("aria-hidden","false");
 
-    // IMPORTANT: load the lightweight player page with a query string pointing to your mp4
-    const playerUrl = `cinematics/player.html?src=${encodeURIComponent(srcPath)}`;
-    frame.src = playerUrl;
+    // Reset gate
+    if(gate) gate.style.display = "none";
 
-    console.warn(`[CINEMATIC] Opening: ${srcPath}`);
-    try{ toastMsg(`Cinematic: ${srcPath.split("/").pop()}`); }catch{}
+    // Load + attempt play
+    video.src = resolved;
+    video.muted = false;      // allow sound if user has clicked Enable Sound already
+    video.controls = false;
+
+    const attempt = video.play();
+    if(attempt && typeof attempt.catch === "function"){
+      attempt.catch(() => {
+        // Autoplay blocked: show click gate
+        if(gate) gate.style.display = "flex";
+      });
+    }
+
+    if(btn){
+      btn.onclick = () => {
+        if(gate) gate.style.display = "none";
+        video.play().catch(()=>{});
+      };
+    }
   }
 
   function closeCinematic(){
-    const els = cinematicEls();
+    const els = cinVideoEls();
     if(!els) return;
 
-    const { overlay, frame } = els;
+    const { overlay, video, gate } = els;
 
     overlay.classList.remove("show");
     overlay.setAttribute("aria-hidden","true");
+    if(gate) gate.style.display = "none";
 
-    // Stop the iframe page completely
-    frame.src = "about:blank";
+    try{ video.pause(); }catch{}
+    video.removeAttribute("src");
+    try{ video.load(); }catch{}
 
-    // Unfreeze main UI
     document.body.classList.remove("cinematicMode");
 
-    // Resume background video if present
     const bg = document.getElementById("bgVideo");
     try{ bg && bg.play && bg.play().catch(()=>{}); }catch{}
 
-    // Restore heartbeat volume
-    try{
-      if(audio && audio.enabled && audio.heartbeat){
-        audio.heartbeat.volume = 0.55;
-      }
-    }catch{}
+    try{ if(audio?.enabled && audio.heartbeat) audio.heartbeat.volume = 0.55; }catch{}
 
     console.warn("[CINEMATIC] Closed.");
   }
 
-  // Listen for the cinematic page telling us it finished
-  window.addEventListener("message", (ev)=>{
-    const data = ev && ev.data;
-    if(!data || data.type !== "cinematic_done") return;
+  // Close when video ends/errors
+  (function bindCinematicVideoEvents(){
+    const els = cinVideoEls();
+    if(!els) return;
+    const { video } = els;
 
-    console.warn(`[CINEMATIC] Done message received. reason=${data.reason || "?"}`);
-
-    // Optional: if we queued the Final Seal overlay until after the cinematic, fire it now.
-    if(state && state.flags && state.flags.pendingFinalSeal){
-      state.flags.pendingFinalSeal = false;
-      // Keep the original seal overlay behavior, but only AFTER the cinematic ends
-      if(!state.finalSealShown){
-        state.finalSealShown = true;
-        triggerFinalSeal();
+    video.addEventListener("ended", ()=>{
+      // If we queued the Final Seal overlay until after the cinematic, fire it now.
+      if(state?.flags?.pendingFinalSeal){
+        state.flags.pendingFinalSeal = false;
+        if(!state.finalSealShown){
+          state.finalSealShown = true;
+          triggerFinalSeal();
+        }
       }
-    }
+      closeCinematic();
+    });
 
-    closeCinematic();
-  });
-    // ---------- Wyvern Emergency Cinematic ----------
+    video.addEventListener("error", ()=>{
+      console.warn("[CINEMATIC] Video error event fired.");
+      // Still proceed to seal overlay if queued
+      if(state?.flags?.pendingFinalSeal){
+        state.flags.pendingFinalSeal = false;
+        if(!state.finalSealShown){
+          state.finalSealShown = true;
+          triggerFinalSeal();
+        }
+      }
+      closeCinematic();
+    });
+  })();
+
+  // ---------- Wyvern Emergency Cinematic ----------
       function wyvernVideoUrl(){
     openCinematic("assets/video/wyvern_emergency.mp4");
   }
@@ -835,7 +860,7 @@ function spawnThreat(type){
   const base = THREATS[type];
   state.threat = JSON.parse(JSON.stringify(base)); // deep copy
 
-  if(type === "wyvern") playWyvernEmergencyVideo();
+    if(type === "wyvern") openCinematic("assets/video/wyvern_emergency.mp4");
 
   showBanner(
     "COMBAT INTRUSION",
