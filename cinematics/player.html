@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cinematic</title>
+  <style>
+    html,body{height:100%; margin:0; background:#000; overflow:hidden}
+    .wrap{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#000}
+    video{width:100vw; height:100vh; object-fit:cover; background:#000}
+
+    /* Click-to-play fallback (if autoplay is blocked) */
+    .gate{
+      position:fixed; inset:0;
+      display:none;
+      align-items:center; justify-content:center;
+      background:rgba(0,0,0,.75);
+      color:#e9f2ee;
+      font: 700 18px system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      text-align:center;
+      padding:24px;
+    }
+    .gate button{
+      margin-top:14px;
+      padding:12px 16px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.2);
+      background:rgba(0,0,0,.55);
+      color:#e9f2ee;
+      font-weight:800;
+      cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <video id="v" playsinline preload="auto"></video>
+  </div>
+
+  <div class="gate" id="gate">
+    <div>
+      <div><b>Cinematic ready.</b></div>
+      <div style="opacity:.85; margin-top:8px;">Click to play on this browser/device.</div>
+      <button id="btnPlay">Play Cinematic</button>
+    </div>
+  </div>
+
+  <script>
+    // GitHub Pages base helper (works in subfolders)
+    const BASE = (() => {
+      const parts = location.pathname.split("/").filter(Boolean);
+      return parts.length ? `/${parts[0]}/` : "/";
+    })();
+
+    function withBase(url){
+      if(!url) return url;
+      if(url.startsWith("http") || url.startsWith("data:") || url.startsWith("blob:")) return url;
+      return url.startsWith("/") ? url : BASE + url;
+    }
+
+    const qs = new URLSearchParams(location.search);
+    const src = qs.get("src"); // expects e.g. assets/video/wyvern_emergency.mp4
+    const video = document.getElementById("v");
+    const gate = document.getElementById("gate");
+    const btnPlay = document.getElementById("btnPlay");
+
+    function tellParentDone(reason){
+      try{
+        parent.postMessage({ type:"cinematic_done", reason: reason || "ended" }, "*");
+      }catch{}
+    }
+
+    if(!src){
+      // No src passed, just exit cleanly.
+      tellParentDone("no_src");
+    } else {
+      video.src = withBase(src);
+      video.load();
+
+      // Autoplay attempt:
+      video.play().then(()=>{
+        // ok
+      }).catch(()=>{
+        // Autoplay blocked on some devices. Show click gate.
+        gate.style.display = "flex";
+      });
+
+      btnPlay.addEventListener("click", ()=>{
+        gate.style.display = "none";
+        video.play().catch(()=>{});
+      });
+
+      video.addEventListener("ended", ()=> tellParentDone("ended"));
+      video.addEventListener("error", ()=> tellParentDone("error"));
+    }
+  </script>
+</body>
+</html>
