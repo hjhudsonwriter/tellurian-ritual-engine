@@ -314,7 +314,19 @@
   </div>
 </div>
   
-    <!-- CINEMATIC OVERLAY (iframe player) -->
+    <!-- CINEMATIC VIDEO OVERLAY (direct video, no iframe) -->
+  <div id="cinVideoOverlay" class="cinOverlay" aria-hidden="true">
+    <video id="cinVideo" class="cinVideo" playsinline preload="auto"></video>
+
+    <div id="cinGate" class="cinGate" style="display:none;">
+      <div>
+        <div><b>Cinematic ready.</b></div>
+        <div style="opacity:.85; margin-top:8px;">Click to play (browser blocked autoplay).</div>
+        <button id="cinGateBtn" class="btn btn--primary" style="margin-top:14px;">Play Cinematic</button>
+      </div>
+    </div>
+  </div>  
+  <!-- CINEMATIC OVERLAY (iframe player) -->
   <div id="cinematicOverlay" class="cinOverlay" aria-hidden="true">
     <iframe
       id="cinematicFrame"
