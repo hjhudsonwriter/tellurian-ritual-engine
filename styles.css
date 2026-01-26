@@ -785,6 +785,28 @@ body::after{
   background:#000;
 }
 
+.cinVideo{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  background:#000;
+  display:block;
+}
+
+.cinGate{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.75);
+  color:#e9f2ee;
+  font: 700 18px system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  text-align:center;
+  padding:24px;
+  z-index:10000;
+}
+
 /* While cinematic plays, freeze expensive UI work */
 body.cinematicMode *{
   animation-play-state: paused !important;
