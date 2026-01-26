@@ -40,6 +40,9 @@
   const logEl = $("log");
   const btnClearLog = $("btnClearLog");
 
+  const cinematicOverlay = $("cinematicOverlay");
+  const cinematicFrame = $("cinematicFrame");
+
   // Modal
   const modal = $("modal");
   const modalTitle = $("modalTitle");
@@ -178,9 +181,66 @@ audio.sfx.seal.volume     = 0.50;
     audio.heartbeat.playbackRate = r;
   }
 
+  // ---------- Cinematics (iframe player) ----------
+function openCinematic(srcPath){
+  if(!cinematicOverlay || !cinematicFrame) return;
+
+  // Freeze the main page to give video max performance
+  document.body.classList.add("cinematicMode");
+
+  // Pause background video if you have one
+  const bg = document.getElementById("bgVideo");
+  try{ bg && bg.pause && bg.pause(); }catch{}
+
+  // Optional: soften the heartbeat while cinematic runs (prevents “audio pile-up”)
+  try{
+    if(audio && audio.enabled && audio.heartbeat){
+      audio.heartbeat.volume = 0.15;
+    }
+  }catch{}
+
+  cinematicOverlay.classList.add("show");
+  cinematicOverlay.setAttribute("aria-hidden","false");
+
+  // Load the lightweight player page with a query string pointing to your mp4
+  const playerUrl = `cinematics/player.html?src=${encodeURIComponent(srcPath)}`;
+  cinematicFrame.src = playerUrl;
+}
+
+function closeCinematic(){
+  if(!cinematicOverlay || !cinematicFrame) return;
+
+  cinematicOverlay.classList.remove("show");
+  cinematicOverlay.setAttribute("aria-hidden","true");
+
+  // Stop the iframe page completely
+  cinematicFrame.src = "about:blank";
+
+  // Unfreeze main UI
+  document.body.classList.remove("cinematicMode");
+
+  // Resume background video if present
+  const bg = document.getElementById("bgVideo");
+  try{ bg && bg.play && bg.play().catch(()=>{}); }catch{}
+
+  // Restore heartbeat volume
+  try{
+    if(audio && audio.enabled && audio.heartbeat){
+      audio.heartbeat.volume = 0.55;
+    }
+  }catch{}
+}
+
+// Listen for the cinematic page telling us it finished
+window.addEventListener("message", (ev)=>{
+  const data = ev && ev.data;
+  if(!data || data.type !== "cinematic_done") return;
+  closeCinematic();
+});
+
     // ---------- Wyvern Emergency Cinematic ----------
       function wyvernVideoUrl(){
-    return withBase("assets/video/wyvern_emergency_optimized.mp4");
+    openCinematic("assets/video/wyvern_emergency.mp4");
   }
 
   function playWyvernEmergencyVideo(){
@@ -315,6 +375,8 @@ vid.src = preload ? preload.currentSrc || preload.src : wyvernVideoUrl();
       silence: { progress: 0, stress: 0, locked: false },
     },
     finalSealShown: false,
+    successCinematicShown: false,
+failCinematicShown: false,
         threat: null, // active combat threat or null
     modalCtx: null,
   };
@@ -544,31 +606,48 @@ const THREATS = {
     elStateLabel.textContent = stateTxt;
 
     // fail check
-    if(state.phase!=="failed"){
-      if(s.weight.stress>=4 || s.memory.stress>=4 || s.silence.stress>=4){
-        state.phase="failed";
-                showBanner("RITUAL COLLAPSE", "A Glyph Fractures", "Stress reached 4. The binding fails.", 4200, true);
-        playSfx("interrupt");
-        log("Glyph Fracture", "A stone screams as it cracks. The binding collapses.");
-        toastMsg("FAILED: A stone fractured (Stress 4).");
-      }
+if(state.phase!=="failed"){
+  if(s.weight.stress>=4 || s.memory.stress>=4 || s.silence.stress>=4){
+    state.phase="failed";
+    showBanner("RITUAL COLLAPSE", "A Glyph Fractures", "Stress reached 4. The binding fails.", 4200, true);
+    playSfx("interrupt");
+    log("Glyph Fracture", "A stone screams as it cracks. The binding collapses.");
+    toastMsg("FAILED: A stone fractured (Stress 4).");
+
+    // Cinematic (only once)
+    if(!state.failCinematicShown){
+      state.failCinematicShown = true;
+      openCinematic("assets/video/ritual_collapse.mp4");
     }
+  }
+}
 
         // seal check (all locked)
-    if(state.phase==="running" && allLocked()){
-      state.phase="sealed";
+if(state.phase==="running" && allLocked()){
+  state.phase="sealed";
 
-      showBanner("FINAL SEAL", "The Heartwood Sleeps",
-        "All stones lock at once. The chamber exhales, and the earth begins to close.", 4200);
+  showBanner(
+    "FINAL SEAL",
+    "The Heartwood Sleeps",
+    "All stones lock at once. The chamber exhales, and the earth begins to close.",
+    4200
+  );
 
-      log("Seal Set", "The roots recoil. The earth closes like an eyelid. The Heartwood sleeps.");
-      toastMsg("SEALED: All stones locked.");
+  log("Seal Set", "The roots recoil. The earth closes like an eyelid. The Heartwood sleeps.");
+  toastMsg("SEALED: All stones locked.");
 
-      if(!state.finalSealShown){
-        state.finalSealShown = true;
-        triggerFinalSeal();
-      }
+  // Cinematic (only once)
+  if(!state.successCinematicShown){
+    state.successCinematicShown = true;
+    openCinematic("assets/video/ritual_success.mp4");
   }
+
+  // Keep your existing final seal overlay behaviour if you still want it
+  if(!state.finalSealShown){
+    state.finalSealShown = true;
+    triggerFinalSeal();
+  }
+}
                 // ---------- Combat Triggers ----------
 
         // Emergency Wyvern check MUST run before Husk/Buckbear checks
