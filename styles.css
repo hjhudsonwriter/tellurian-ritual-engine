@@ -712,7 +712,7 @@ body::after{
 
 .threatPanel{
   position:absolute;
-  top:20px;
+  top:05px;
   right:20px;
   width:320px;
   padding:16px;
