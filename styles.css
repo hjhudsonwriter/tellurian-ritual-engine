@@ -765,29 +765,30 @@ body::after{
 .enemyVisual{
   position: absolute;
 
-  /* Raise it significantly */
-  top: 40px;
+  /* Higher */
+  top: -10px;
   left: 40px;
 
-  /* Tighter panel */
-  width: 360px;
-  height: 210px;
+  /* Size of the art area (adjust if you want bigger/smaller) */
+  width: 420px;
+  height: 320px;
 
-  border-radius: 18px;
+  /* No panel */
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
 
-  /* Solid black like threat panel */
-  background: #070709;
-  border: 1px solid rgba(255,255,255,.10);
-  box-shadow: 0 18px 55px rgba(0,0,0,.75);
-
-  overflow: hidden;
+  /* Crucial: do NOT clip the image */
+  overflow: visible;
 
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
+  justify-content: flex-start;
 
   pointer-events: none;
 }
+
 
 .enemyVisual.hidden{
   display: none;
@@ -797,11 +798,21 @@ body::after{
   width: 100%;
   height: 100%;
 
-  /* Fill the space more tightly */
-  object-fit: cover;
+  /* Transparent PNG should fit without cropping */
+  object-fit: contain;
 
+  /* Ensure nothing clips */
+  display: block;
+
+  /* Nice spectral presence without a box */
   opacity: 1;
-  filter: none;
+  filter:
+    drop-shadow(0 18px 40px rgba(0,0,0,.75))
+    drop-shadow(0 0 18px rgba(80,160,80,.22));
+}
+
+.enemyVisual img{
+  transform: translateY(-12px);
 }
 
 @keyframes threatRise{
