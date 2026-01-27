@@ -308,7 +308,7 @@ audio.sfx.seal.volume     = 0.50;
 
   // ---------- Wyvern Emergency Cinematic ----------
       function wyvernVideoUrl(){
-    openCinematic("assets/video/wyvern_emergency.mp4");
+    openCinematic("https://github.com/hjhudsonwriter/tellurian-ritual-engine/releases/download/v1.0-ritual/wyvern_emergency.mp4");
   }
 
   function playWyvernEmergencyVideo(){
@@ -685,7 +685,7 @@ if(state.phase!=="failed"){
     // Cinematic (only once)
     if(!state.failCinematicShown){
       state.failCinematicShown = true;
-      openCinematic("assets/video/ritual_collapse.mp4");
+      openCinematic("https://github.com/hjhudsonwriter/tellurian-ritual-engine/releases/download/v1.0-ritual/ritual_collapse.mp4");
     }
   }
 }
@@ -707,7 +707,7 @@ if(state.phase==="running" && allLocked()){
   // Cinematic (only once)
   if(!state.successCinematicShown){
     state.successCinematicShown = true;
-    openCinematic("assets/video/ritual_success.mp4");
+    openCinematic("https://github.com/hjhudsonwriter/tellurian-ritual-engine/releases/download/v1.0-ritual/ritual_success.mp4");
   }
 
     // Queue the Final Seal overlay until AFTER the cinematic finishes
@@ -860,7 +860,7 @@ function spawnThreat(type){
   const base = THREATS[type];
   state.threat = JSON.parse(JSON.stringify(base)); // deep copy
 
-    if(type === "wyvern") openCinematic("assets/video/wyvern_emergency.mp4");
+    if(type === "wyvern") openCinematic("https://github.com/hjhudsonwriter/tellurian-ritual-engine/releases/download/v1.0-ritual/wyvern_emergency.mp4");
 
   showBanner(
     "COMBAT INTRUSION",
@@ -985,7 +985,7 @@ function resolveThreat(){
       toastMsg("RITUAL COMPLETE: The Heartwood is sealed.");
             if(!state.successCinematicShown){
         state.successCinematicShown = true;
-        openCinematic("assets/video/ritual_success.mp4");
+        openCinematic("https://github.com/hjhudsonwriter/tellurian-ritual-engine/releases/download/v1.0-ritual/ritual_success.mp4");
 
         // Queue the seal overlay until after the cinematic closes (prevents conflict)
         state.flags = state.flags || {};
@@ -998,7 +998,7 @@ function resolveThreat(){
       toastMsg("RITUAL FAILED: Time ran out (not all stones locked).");
             if(!state.failCinematicShown){
         state.failCinematicShown = true;
-        openCinematic("assets/video/ritual_collapse.mp4");
+        openCinematic("https://github.com/hjhudsonwriter/tellurian-ritual-engine/releases/download/v1.0-ritual/ritual_collapse.mp4");
       }
     }
     renderAll();
@@ -1016,7 +1016,7 @@ function resolveThreat(){
 
       if(!state.failCinematicShown){
         state.failCinematicShown = true;
-        openCinematic("assets/video/ritual_collapse.mp4");
+        openCinematic("https://github.com/hjhudsonwriter/tellurian-ritual-engine/releases/download/v1.0-ritual/ritual_collapse.mp4");
       }
 
       return;
@@ -1360,7 +1360,7 @@ btnApply.textContent = isAssist ? "Set Assist" : "Apply";
 
       // TEMP TEST: press P to force-play the success cinematic
       if (e.key.toLowerCase() === "p") {
-        openCinematic("assets/video/ritual_success.mp4");
+        openCinematic("https://github.com/hjhudsonwriter/tellurian-ritual-engine/releases/download/v1.0-ritual/ritual_success.mp4");
       }
     });
 
