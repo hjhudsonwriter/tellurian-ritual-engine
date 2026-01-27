@@ -2,6 +2,28 @@
   "use strict";
 
   const $ = (id) => document.getElementById(id);
+  
+  function setEnemyVisual(threatId){
+  const wrap = document.getElementById("enemyVisual");
+  const img  = document.getElementById("enemyVisualImg");
+  if(!wrap || !img) return;
+
+  let src = "";
+  if(threatId === "husk") src = "assets/img/husk.png";
+  if(threatId === "buckbear") src = "assets/img/buckbear.png";
+  if(threatId === "wyvern") src = "assets/img/wyvern.png";
+
+  if(src){
+    img.src = src;
+    wrap.classList.remove("hidden");
+    wrap.setAttribute("aria-hidden","false");
+  } else {
+    wrap.classList.add("hidden");
+    wrap.setAttribute("aria-hidden","true");
+    img.src = "";
+  }
+}
+
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
     // ---------- GitHub Pages base-path helper ----------
   const BASE = (() => {
@@ -86,9 +108,11 @@
   function renderThreat(){
   if(!state.threat){
     hideThreat();
+    setEnemyVisual(null);
     return;
   }
   const t = state.threat;
+    setEnemyVisual(t.id);
   threatPanel.classList.remove("hidden");
   threatName.textContent = t.name;
   threatHint.textContent = t.consequence;
