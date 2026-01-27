@@ -438,10 +438,10 @@ vid.src = preload ? preload.currentSrc || preload.src : wyvernVideoUrl();
   silence: { on:false, slot:0 },   // next Silence attempt pre-fills slot
 },
     stones: {
-      weight:  { progress: 0, stress: 0, locked: false },
-      memory:  { progress: 0, stress: 0, locked: false },
-      silence: { progress: 0, stress: 0, locked: false },
-    },
+  weight:  { progress: 0, stress: 0, locked: false, cracked: false },
+  memory:  { progress: 0, stress: 0, locked: false, cracked: false },
+  silence: { progress: 0, stress: 0, locked: false, cracked: false },
+},
     finalSealShown: false,
     successCinematicShown: false,
 failCinematicShown: false,
@@ -461,6 +461,11 @@ failCinematicShown: false,
 function lockedCount(){
   const s = state.stones;
   return [s.weight.locked, s.memory.locked, s.silence.locked].filter(Boolean).length;
+}
+
+  function crackedCount(){
+  const s = state.stones;
+  return [s.weight.cracked, s.memory.cracked, s.silence.cracked].filter(Boolean).length;
 }
 
 function hasThreat(){
@@ -673,19 +678,20 @@ const THREATS = {
 
     elStateLabel.textContent = stateTxt;
 
-    // fail check
-if(state.phase!=="failed"){
-  if(s.weight.stress>=4 || s.memory.stress>=4 || s.silence.stress>=4){
-    state.phase="failed";
-    showBanner("RITUAL COLLAPSE", "A Glyph Fractures", "Stress reached 4. The binding fails.", 4200, true);
+    // fail check (NEW RULES):
+// - A single cracked stone does NOT end the ritual.
+// - Ritual only hard-fails immediately if ALL THREE stones are cracked.
+if(state.phase === "running"){
+  if(crackedCount() >= 3){
+    state.phase = "failed";
+    showBanner("RITUAL COLLAPSE", "All Glyphs Have Fractured", "The last stone breaks. The binding cannot hold.", 5200, true);
     playSfx("interrupt");
-    log("Glyph Fracture", "A stone screams as it cracks. The binding collapses.");
-    toastMsg("FAILED: A stone fractured (Stress 4).");
+    log("Ritual Collapse", "All three stones have cracked. The binding collapses completely.");
+    toastMsg("FAILED: All three stones cracked.");
 
-    // Cinematic (only once)
     if(!state.failCinematicShown){
       state.failCinematicShown = true;
-      openCinematic("https://github.com/hjhudsonwriter/tellurian-ritual-engine/releases/download/v1.0-ritual/ritual_collapse.mp4");
+      openCinematic("...your collapse video url...");
     }
   }
 }
@@ -720,7 +726,7 @@ if(state.phase==="running" && allLocked()){
         if(state.phase === "running"){
           const wyvernConditions = [
             totalStress() >= 9,
-            Object.values(state.stones).filter(s=>s.stress>=4).length >= 1,
+            crackedCount() >= 1,
             state.round >= 7 && lockedCount() === 0
           ];
 
@@ -904,28 +910,51 @@ function resolveThreat(){
 
   // ---------- State mutations ----------
   function setLockedIfComplete(id){
-    const st=state.stones[id];
-    if(st.progress>=3){
-      st.progress=3;
-      if(!st.locked){
-        st.locked=true;
-        playSfx("lock");
-                showBanner("STONE LOCKED", cap(id), "The glyph falls quiet.", 3000);
-        log("Stone Locked", `${cap(id)} locks into place. The runes go still.`);
-      }
-    } else {
-      st.locked=false;
-    }
+  const st = state.stones[id];
+
+  // Cracked stones can never lock
+  if(st.cracked){
+    st.locked = false;
+    return;
   }
 
-  function addStress(id, n=1, opts={}){
-    const st=state.stones[id];
-    if(opts.event && st.locked) return;
-    st.stress = clamp(st.stress+n, 0, 4);
-    playSfx("stress");
-        showBanner("STONE STRAIN", `${cap(id)}`, "+1 Stress", 2400, true);
-    renderAll();
+  if(st.progress >= 3){
+    st.progress = 3;
+    if(!st.locked){
+      st.locked = true;
+      playSfx("lock");
+      showBanner("STONE LOCKED", cap(id), "The glyph falls quiet.", 3000);
+      log("Stone Locked", `${cap(id)} locks into place. The runes go still.`);
+    }
+  } else {
+    st.locked = false;
   }
+}
+
+  function addStress(id, n=1, opts={}){
+  const st = state.stones[id];
+  if(opts.event && st.locked) return;
+
+  // If already cracked, don't keep adding stress (ritual continues but stone is dead)
+  if(st.cracked) return;
+
+  const prev = st.stress;
+  st.stress = clamp(st.stress + n, 0, 4);
+
+  playSfx("stress");
+  showBanner("STONE STRAIN", `${cap(id)}`, "+1 Stress", 2400, true);
+
+  // If it reaches 4 now, it cracks (but does NOT auto-fail the whole ritual)
+  if(prev < 4 && st.stress >= 4){
+    st.cracked = true;
+    st.locked = false;
+    showBanner("GLYPH FRACTURE", cap(id), "The stone cracks. The ritual can continue, but this glyph is lost.", 4200, true);
+    log("Glyph Fracture", `${cap(id)} cracks (Stress 4). The binding staggers but holds… for now.`);
+    toastMsg(`${cap(id)} CRACKED (Stress 4). Ritual continues.`);
+  }
+
+  renderAll();
+}
 
   function removeStress(id, n=1){
     const st=state.stones[id];
@@ -992,15 +1021,28 @@ function resolveThreat(){
         state.flags.pendingFinalSeal = true;
       }
     } else {
-      state.phase = "failed";
-      playSfx("interrupt");
-      log("Time Runs Out", "The lullaby falters. The chamber convulses. The binding collapses under its own strain.");
-      toastMsg("RITUAL FAILED: Time ran out (not all stones locked).");
-            if(!state.failCinematicShown){
-        state.failCinematicShown = true;
-        openCinematic("https://github.com/hjhudsonwriter/tellurian-ritual-engine/releases/download/v1.0-ritual/ritual_collapse.mp4");
-      }
+  const cc = crackedCount();
+
+  // Only play collapse cinematic at end if 2+ stones are cracked
+  if(cc >= 2){
+    state.phase = "failed";
+    playSfx("interrupt");
+    log("Time Runs Out", "The lullaby falters. Too many glyphs are broken. The chamber convulses as the binding collapses.");
+    toastMsg("RITUAL FAILED: Time ran out (2+ stones cracked).");
+
+    if(!state.failCinematicShown){
+      state.failCinematicShown = true;
+      openCinematic("...your collapse video url...");
     }
+  } else {
+    // 0–1 cracked: ritual incomplete/unstable, but not a total collapse
+    state.phase = "failed";
+    playSfx("interrupt");
+    log("Ritual Falters", "Time runs out, but the binding does not fully collapse. The Heartwood stirs, unrest held at bay… for now.");
+    toastMsg("RITUAL ENDS: Incomplete seal (0–1 stones cracked). No total collapse.");
+    // No collapse cinematic here by design.
+  }
+}
     renderAll();
     return;
   }
@@ -1130,6 +1172,13 @@ btnApply.textContent = isAssist ? "Set Assist" : "Apply";
   const stone = ctx.stone;
   const action = ctx.action;
   const st = state.stones[stone];
+    // Cracked stones cannot be assisted or attempted
+if(st.cracked){
+  showBanner("STONE CRACKED", cap(stone), "This glyph has failed. It cannot be worked further.", 3200, true);
+  toastMsg("That stone is cracked and cannot be used.");
+  closeModal();
+  return;
+}
 
   // -----------------------------
   // OPTION A: ASSIST = "setup only"
