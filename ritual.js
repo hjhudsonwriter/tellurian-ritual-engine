@@ -938,18 +938,16 @@ function resolveThreat(){
   // If we're already at the final round, Next Round becomes "Resolve Finale"
   if(state.round >= state.roundMax){
     if(allLocked()){
-      // Force a clear finale moment even if it already sealed earlier
-      state.phase = "sealed";
-      log("Final Seal", "The last glyph falls quiet. The roots recoil. The earth closes like an eyelid. The Heartwood sleeps.");
-      toastMsg("RITUAL COMPLETE: The Heartwood is sealed.");
-            if(!state.successCinematicShown){
-        state.successCinematicShown = true;
-        openCinematic(VIDEO.TRUE_SEAL);
+  state.phase = "sealed";
 
-        // Queue the seal overlay until after the cinematic closes (prevents conflict)
-        state.flags = state.flags || {};
-        state.flags.pendingFinalSeal = true;
-      }
+  if(!state.successCinematicShown){
+    state.successCinematicShown = true;
+    openCinematic(VIDEO.TRUE_SEAL);
+  }
+
+  // defer final seal overlay until cinematic ends
+  state.pendingFinalSeal = true;
+}
     } else {
   const cc = crackedCount();
 
