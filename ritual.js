@@ -723,7 +723,7 @@ if(state.phase === "running"){
 
     if(!state.failCinematicShown){
       state.failCinematicShown = true;
-      openCinematic("...your collapse video url...");
+      openCinematic(VIDEO.FRACTURED);
     }
   }
 }
@@ -745,7 +745,7 @@ if(state.phase==="running" && allLocked()){
   // Cinematic (only once)
   if(!state.successCinematicShown){
     state.successCinematicShown = true;
-    openCinematic("https://github.com/hjhudsonwriter/tellurian-ritual-engine/releases/download/v1.0-ritual/ritual_success.mp4");
+    openCinematic(VIDEO.TRUE_SEAL);
   }
 
     // Queue the Final Seal overlay until AFTER the cinematic finishes
@@ -755,33 +755,42 @@ if(state.phase==="running" && allLocked()){
                 // ---------- Combat Triggers ----------
 
         // Emergency Wyvern check MUST run before Husk/Buckbear checks
-        if(state.phase === "running"){
+    if(state.flags?.noMoreIntrusions) return;    
+    if(state.phase === "running"){
           const wyvernConditions = [
             totalStress() >= 9,
             crackedCount() >= 1,
             state.round >= 7 && lockedCount() === 0
           ];
 
-          const wyvernReady = (wyvernConditions.filter(Boolean).length >= 2);
-                    if(totalStress() >= 9 && state.round >= 7){
-            log("Wyvern Check", `Stress>=9: ${wyvernConditions[0]} | Fracture: ${wyvernConditions[1]} | R7+NoLocks: ${wyvernConditions[2]} (locks=${lockedCount()})`);
-          }
+          // --- WYVERN TRIGGER (priority) ---
+const autoWyvern = (state.round >= 7);
+const wyvernReady = autoWyvern || (wyvernConditions.filter(Boolean).length >= 2);
 
-          if(wyvernReady){
-            // If no current threat: spawn Wyvern immediately (priority)
-            if(!state.threat){
-              spawnThreat("wyvern");
-            }
-            // If Husk is active: Wyvern may REPLACE it
-            else if(state.threat && state.threat.id === "husk"){
-              log("Threat Escalates", "The Husk is smothered by root and stone as something vastly larger takes shape.");
-              state.threat = null;
-              hideThreat();
-              spawnThreat("wyvern");
-            }
-            // If Buckbear (or anything else) is active: do nothing (NO replacement)
-          }
-        }
+// If Wyvern has been defeated, intrusions are over (including Wyvern re-spawn)
+if(state.flags?.noMoreIntrusions) {
+  // optional debug:
+  // log("Wyvern Blocked", "Wyvern defeated: no further intrusions.");
+} else if(wyvernReady && state.threat?.id !== "wyvern") {
+
+  log(
+    "Wyvern Check",
+    `autoR7=${autoWyvern} | stressCond=${wyvernConditions[0]} | fractureCond=${wyvernConditions[1]} | r7NoLocksCond=${wyvernConditions[2]} | locks=${lockedCount()}`
+  );
+
+  // If no current threat: spawn Wyvern immediately
+  if(!state.threat){
+    spawnThreat("wyvern");
+  }
+  // If Husk is active: Wyvern replaces it
+  else if(state.threat.id === "husk"){
+    log("Threat Escalates", "The Husk is smothered by root and stone as something vastly larger takes shape.");
+    state.threat = null;
+    hideThreat();
+    spawnThreat("wyvern");
+  }
+  // If Buckbear (or anything else) is active: do nothing (no replacement)
+}
 
         // Normal triggers only run if we still have no active threat
         if(!state.threat && state.phase==="running"){
@@ -930,14 +939,19 @@ function resolveThreat(){
 
   // Emergency payoff
   if(t.id === "wyvern"){
-    ["weight","memory","silence"].forEach(id=>{
-      removeStress(id,1);
-      addProgress(id,2);
-    });
-  }
+  ["weight","memory","silence"].forEach(id=>{
+    removeStress(id,1);
+    addProgress(id,2);
+  });
+
+  // Once Wyvern is beaten, no more combat intrusions
+  state.flags = state.flags || {};
+  state.flags.noMoreIntrusions = true;
+}
 
   state.threat = null;
   hideThreat();
+  setEnemyVisual(null);
 }
 
   // ---------- State mutations ----------
@@ -1046,7 +1060,7 @@ function resolveThreat(){
       toastMsg("RITUAL COMPLETE: The Heartwood is sealed.");
             if(!state.successCinematicShown){
         state.successCinematicShown = true;
-        openCinematic("https://github.com/hjhudsonwriter/tellurian-ritual-engine/releases/download/v1.0-ritual/ritual_success.mp4");
+        openCinematic(VIDEO.TRUE_SEAL);
 
         // Queue the seal overlay until after the cinematic closes (prevents conflict)
         state.flags = state.flags || {};
@@ -1064,15 +1078,23 @@ function resolveThreat(){
 
     if(!state.failCinematicShown){
       state.failCinematicShown = true;
-      openCinematic("...your collapse video url...");
+      openCinematic(VIDEO.FRACTURED);
     }
   } else {
-    // 0–1 cracked: ritual incomplete/unstable, but not a total collapse
-    state.phase = "failed";
-    playSfx("interrupt");
-    log("Ritual Falters", "Time runs out, but the binding does not fully collapse. The Heartwood stirs, unrest held at bay… for now.");
-    toastMsg("RITUAL ENDS: Incomplete seal (0–1 stones cracked). No total collapse.");
-    // No collapse cinematic here by design.
+    // 0–1 cracked: STRAINED BINDING (contained, imperfect)
+state.phase = "failed";
+playSfx("interrupt");
+log(
+  "Strained Binding",
+  "The binding holds, but imperfectly. The Heartwood settles into a restless sleep."
+);
+
+toastMsg("STRAINED BINDING: The Heartwood is contained, but restless.");
+
+if(!state.failCinematicShown){
+  state.failCinematicShown = true;
+  openCinematic(VIDEO.STRAINED);
+}
   }
 }
     renderAll();
@@ -1090,7 +1112,7 @@ function resolveThreat(){
 
       if(!state.failCinematicShown){
         state.failCinematicShown = true;
-        openCinematic("https://github.com/hjhudsonwriter/tellurian-ritual-engine/releases/download/v1.0-ritual/ritual_collapse.mp4");
+        openCinematic(VIDEO.FRACTURED);
       }
 
       return;
