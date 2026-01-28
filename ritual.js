@@ -686,6 +686,7 @@ if(state.flags?.noMoreIntrusions) {
           }
         }
   }
+    } // <-- ADD THIS LINE: closes updatePulse()
 
   function allLocked(){
     const s=state.stones;
@@ -947,7 +948,7 @@ function resolveThreat(){
 
   // defer final seal overlay until cinematic ends
   state.flags = state.flags || {};
-state.flags.pendingFinalSeal = true;
+  state.flags.pendingFinalSeal = true;
 }
     } else {
   const cc = crackedCount();
