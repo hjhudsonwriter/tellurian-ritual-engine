@@ -338,126 +338,6 @@ audio.sfx.seal.volume     = 0.50;
     });
   })();
 
-  // ---------- Wyvern Emergency Cinematic ----------
-      function wyvernVideoUrl(){
-    openCinematic("https://github.com/hjhudsonwriter/tellurian-ritual-engine/releases/download/v1.0-ritual/wyvern_emergency.mp4");
-  }
-
-  function playWyvernEmergencyVideo(){
-    // Prevent double-playing if Wyvern spawns more than once
-    if(state?.flags?.wyvernCinematicPlayed) return;
-    state.flags = state.flags || {};
-    state.flags.wyvernCinematicPlayed = true;
-
-    // Build overlay
-    const overlay = document.createElement("div");
-    overlay.id = "wyvernCinematicOverlay";
-    overlay.setAttribute("role","dialog");
-    overlay.setAttribute("aria-label","Wyvern Emergency");
-
-    const vid = document.createElement("video");
-    vid.id = "wyvernCinematicVideo";
-    const preload = document.getElementById("wyvernPreload");
-vid.src = preload ? preload.currentSrc || preload.src : wyvernVideoUrl();
-    vid.playsInline = true;
-    vid.preload = "auto";
-    vid.disablePictureInPicture = true;
-    vid.controls = false;
-
-    // Try to play with sound (may be blocked until user gesture)
-    vid.muted = false;
-    vid.volume = 1;
-
-    const hint = document.createElement("div");
-    hint.id = "wyvernCinematicHint";
-    hint.textContent = "CLICK TO PLAY";
-
-    overlay.appendChild(vid);
-    overlay.appendChild(hint);
-    document.body.appendChild(overlay);
-    overlay.style.opacity = "0"; // hide until ready
-
-    // Inject CSS once (no need to touch styles.css)
-    if(!document.getElementById("wyvernCinematicStyles")){
-      const css = document.createElement("style");
-      css.id = "wyvernCinematicStyles";
-      css.textContent = `
-        #wyvernCinematicOverlay{
-          position: fixed;
-          inset: 0;
-          z-index: 99999;
-          background: #000;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        #wyvernCinematicVideo{
-          width: 100vw;
-          height: 100vh;
-          object-fit: cover;
-          background: #000;
-        }
-        #wyvernCinematicHint{
-          position: absolute;
-          bottom: 24px;
-          left: 50%;
-          transform: translateX(-50%);
-          padding: 10px 14px;
-          border-radius: 10px;
-          font-weight: 700;
-          letter-spacing: 0.08em;
-          font-size: 12px;
-          background: rgba(0,0,0,0.55);
-          color: #fff;
-          border: 1px solid rgba(255,255,255,0.35);
-          opacity: 0;
-          pointer-events: none;
-        }
-        #wyvernCinematicOverlay.needsClick #wyvernCinematicHint{
-          opacity: 1;
-        }
-      `;
-      document.head.appendChild(css);
-    }
-
-    function cleanup(){
-      try { vid.pause(); } catch(e){}
-      overlay.remove();
-    }
-
-    vid.addEventListener("canplaythrough", () => {
-  overlay.style.opacity = "1";
-}, { once:true });
-
-    // Remove overlay when finished
-    vid.addEventListener("ended", cleanup);
-
-    // Allow click to skip ONLY after video actually starts playing
-    let canSkip = false;
-    overlay.addEventListener("click", () => {
-      if(canSkip) cleanup();
-    });
-
-    // Attempt autoplay
-    const playAttempt = vid.play();
-    vid.addEventListener("playing", () => { canSkip = true; }, { once: true });
-    if(playAttempt && typeof playAttempt.catch === "function"){
-      playAttempt.catch(() => {
-        // Autoplay with sound blocked: require user click to start
-        overlay.classList.add("needsClick");
-        const unlock = () => {
-          overlay.classList.remove("needsClick");
-          // On click, try again (this counts as a user gesture)
-          vid.play().catch(()=>{});
-          overlay.removeEventListener("click", unlock);
-          // Note: overlay click is also "skip"; but unlock happens first here
-        };
-        // First click should start playback, second click can skip if they want
-        overlay.addEventListener("click", unlock, { once: true });
-      });
-    }
-  }
-
   // ---------- State ----------
   const state = {
     round: 1,
@@ -907,7 +787,7 @@ function spawnThreat(type){
   const base = THREATS[type];
   state.threat = JSON.parse(JSON.stringify(base)); // deep copy
 
-    if(type === "wyvern") openCinematic("https://github.com/hjhudsonwriter/tellurian-ritual-engine/releases/download/v1.0-ritual/wyvern_emergency.mp4");
+    if(type === "wyvern") openCinematic(VIDEO.WYVERN;
 
   showBanner(
     "COMBAT INTRUSION",
@@ -935,25 +815,29 @@ function damageThreat(amount){
 
 function resolveThreat(){
   const t = state.threat;
-  log("Threat Defeated", `${t.name} is destroyed.`);
+  if(!t) return;
 
-  // Emergency payoff
+  // Better tone for the Wyvern
   if(t.id === "wyvern"){
-  ["weight","memory","silence"].forEach(id=>{
-    removeStress(id,1);
-    addProgress(id,2);
-  });
+    log("Threat Repelled", `${t.name} unravels back into root and stone.`);
 
-  // Once Wyvern is beaten, no more combat intrusions
-  state.flags = state.flags || {};
-  state.flags.noMoreIntrusions = true;
-}
+    // Emergency payoff
+    ["weight","memory","silence"].forEach(id=>{
+      removeStress(id,1);
+      addProgress(id,2);
+    });
+
+    // Once Wyvern is beaten, no more combat intrusions
+    state.flags = state.flags || {};
+    state.flags.noMoreIntrusions = true;
+  } else {
+    log("Threat Defeated", `${t.name} is destroyed.`);
+  }
 
   state.threat = null;
   hideThreat();
   setEnemyVisual(null);
 }
-
   // ---------- State mutations ----------
   function setLockedIfComplete(id){
   const st = state.stones[id];
@@ -1389,18 +1273,43 @@ if(st.cracked){
   function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
 
   function resetAll(){
-    state.round=1;
-    state.eventIndex=0;
-    state.phase="running";
-    for(const k of Object.keys(state.stones)){
-      state.stones[k].progress=0;
-      state.stones[k].stress=0;
-      state.stones[k].locked=false;
-    }
-    logEl.innerHTML="";
-    toastMsg("Ritual reset.");
-    renderAll();
+  state.round = 1;
+  state.eventIndex = 0;
+  state.phase = "running";
+
+  for(const k of Object.keys(state.stones)){
+    state.stones[k].progress = 0;
+    state.stones[k].stress = 0;
+    state.stones[k].locked = false;
+    state.stones[k].cracked = false;
   }
+
+  // Clear threat + visuals
+  state.threat = null;
+  hideThreat();
+  setEnemyVisual(null);
+
+  // Clear flags + cinematic/seal state
+  state.flags = {};
+  state.finalSealShown = false;
+  state.successCinematicShown = false;
+  state.failCinematicShown = false;
+  state.pendingFinalSeal = false;
+
+  // If seal overlay was visible, hide it
+  const seal = document.getElementById("sealOverlay");
+  if(seal) {
+    seal.classList.remove("show");
+    seal.setAttribute("aria-hidden","true");
+  }
+
+  // If a cinematic was open, close it safely
+  try { closeCinematic("reset"); } catch(e) {}
+
+  logEl.innerHTML = "";
+  toastMsg("Ritual reset.");
+  renderAll();
+}
 
   // ---------- Bind ----------
   function bind(){
