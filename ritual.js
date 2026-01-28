@@ -25,6 +25,14 @@
 }
 
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+
+  // ---------- Ritual Cinematic Videos (GitHub Releases) ----------
+const VIDEO = {
+  WYVERN: "https://github.com/hjhudsonwriter/tellurian-ritual-engine/releases/download/v1.1-ritual-endings/wyvern_emergency.mp4",
+  TRUE_SEAL: "https://github.com/hjhudsonwriter/tellurian-ritual-engine/releases/download/v1.1-ritual-endings/true_seal.mp4",
+  STRAINED: "https://github.com/hjhudsonwriter/tellurian-ritual-engine/releases/download/v1.1-ritual-endings/strained_binding.mp4",
+  FRACTURED: "https://github.com/hjhudsonwriter/tellurian-ritual-engine/releases/download/v1.1-ritual-endings/fractured_containment.mp4",
+};
     // ---------- GitHub Pages base-path helper ----------
   const BASE = (() => {
     const parts = location.pathname.split("/").filter(Boolean);
