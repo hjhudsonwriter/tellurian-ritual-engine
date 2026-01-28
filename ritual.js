@@ -787,7 +787,7 @@ function spawnThreat(type){
   const base = THREATS[type];
   state.threat = JSON.parse(JSON.stringify(base)); // deep copy
 
-    if(type === "wyvern") openCinematic(VIDEO.WYVERN;
+   if(type === "wyvern") openCinematic(VIDEO.WYVERN);
 
   showBanner(
     "COMBAT INTRUSION",
@@ -1372,7 +1372,7 @@ if(st.cracked){
 
       // TEMP TEST: press P to force-play the success cinematic
       if (e.key.toLowerCase() === "p") {
-        openCinematic("https://github.com/hjhudsonwriter/tellurian-ritual-engine/releases/download/v1.0-ritual/ritual_success.mp4");
+        openCinematic(VIDEO.TRUE_SEAL);
       }
     });
 
