@@ -946,7 +946,8 @@ function resolveThreat(){
   }
 
   // defer final seal overlay until cinematic ends
-  state.pendingFinalSeal = true;
+  state.flags = state.flags || {};
+state.flags.pendingFinalSeal = true;
 }
     } else {
   const cc = crackedCount();
