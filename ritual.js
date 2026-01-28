@@ -931,66 +931,71 @@ function resolveThreat(){
     toastMsg(ev.title);
     renderAll();
   }
-
-  // ---------- Round ----------
-  function nextRound(){
-  if(state.phase!=="running") return;
+// ---------- Round ----------
+function nextRound(){
+  if(state.phase !== "running") return;
 
   // If we're already at the final round, Next Round becomes "Resolve Finale"
   if(state.round >= state.roundMax){
+
+    // SUCCESS: all three stones locked
     if(allLocked()){
-  state.phase = "sealed";
+      state.phase = "sealed";
 
-  if(!state.successCinematicShown){
-    state.successCinematicShown = true;
-    openCinematic(VIDEO.TRUE_SEAL);
-  }
+      if(!state.successCinematicShown){
+        state.successCinematicShown = true;
+        openCinematic(VIDEO.TRUE_SEAL);
+      }
 
-  // defer final seal overlay until cinematic ends
-  state.flags = state.flags || {};
-  state.flags.pendingFinalSeal = true;
-}
-    } else {
-  const cc = crackedCount();
+      // defer final seal overlay until cinematic ends
+      state.flags = state.flags || {};
+      state.flags.pendingFinalSeal = true;
 
-  // Only play collapse cinematic at end if 2+ stones are cracked
-  if(cc >= 2){
+      renderAll();
+      return;
+    }
+
+    // NOT ALL LOCKED: determine containment tier
+    const cc = crackedCount();
+
+    // FRACTURED CONTAINMENT: 2+ stones cracked
+    if(cc >= 2){
+      state.phase = "failed";
+      playSfx("interrupt");
+      log("Fractured Containment", "Time runs out. Too many glyphs are broken. The binding holds, but wounded.");
+      toastMsg("FRACTURED CONTAINMENT: Time ran out (2+ stones cracked).");
+
+      if(!state.failCinematicShown){
+        state.failCinematicShown = true;
+        openCinematic(VIDEO.FRACTURED);
+      }
+
+      renderAll();
+      return;
+    }
+
+    // STRAINED BINDING: 0–1 stones cracked
     state.phase = "failed";
     playSfx("interrupt");
-    log("Time Runs Out", "The lullaby falters. Too many glyphs are broken. The chamber convulses as the binding collapses.");
-    toastMsg("RITUAL FAILED: Time ran out (2+ stones cracked).");
+    log("Strained Binding", "Time runs out, but the binding holds. The Heartwood settles into a restless sleep.");
+    toastMsg("STRAINED BINDING: The Heartwood is contained, but restless.");
 
     if(!state.failCinematicShown){
       state.failCinematicShown = true;
-      openCinematic(VIDEO.FRACTURED);
+      openCinematic(VIDEO.STRAINED);
     }
-  } else {
-    // 0–1 cracked: STRAINED BINDING (contained, imperfect)
-state.phase = "failed";
-playSfx("interrupt");
-log(
-  "Strained Binding",
-  "The binding holds, but imperfectly. The Heartwood settles into a restless sleep."
-);
 
-toastMsg("STRAINED BINDING: The Heartwood is contained, but restless.");
-
-if(!state.failCinematicShown){
-  state.failCinematicShown = true;
-  openCinematic(VIDEO.STRAINED);
-}
-  }
-}
     renderAll();
     return;
   }
 
-    // Threat acts if alive
+  // ---------- Threat acts if alive ----------
   if(state.threat){
     const t = state.threat;
     log("Threat Acts", `${t.name} lashes out. ${t.consequence}`);
 
-        if(t.id === "wyvern"){
+    // Wyvern present when advancing round = emergency shatter (Fractured Containment)
+    if(t.id === "wyvern"){
       state.phase = "failed";
       showBanner("RITUAL SHATTERS", "The Wyvern Breaks the Binding", "The Heartwood refuses the seal.", 5200);
 
@@ -999,26 +1004,28 @@ if(!state.failCinematicShown){
         openCinematic(VIDEO.FRACTURED);
       }
 
+      renderAll();
       return;
     }
 
+    // Non-wyvern threat consequences
     if(t.tier === 1){
-      addStress(randomStone(),1);
+      addStress(randomStone(), 1);
     } else if(t.tier === 2){
-      ["weight","memory","silence"].forEach(id=>addStress(id,1));
+      ["weight","memory","silence"].forEach(id => addStress(id, 1));
     }
   }
-    
-    // Normal advance
-  state.round = clamp(state.round+1, 1, state.roundMax);
+
+  // ---------- Normal advance ----------
+  state.round = clamp(state.round + 1, 1, state.roundMax);
   log("Round Advances", "The chamber shifts. Roots redraw their lines across the stone.");
   renderAll();
 }
 
-  function prevRound(){
-    state.round = clamp(state.round-1, 1, state.roundMax);
-    renderAll();
-  }
+function prevRound(){
+  state.round = clamp(state.round - 1, 1, state.roundMax);
+  renderAll();
+}
 
   // ---------- Modal ----------
   function openModal(stone, action){
